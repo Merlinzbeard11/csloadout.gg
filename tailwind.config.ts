@@ -23,6 +23,9 @@ const config: Config = {
           950: "#0a0a0a",
         },
       },
+      width: {
+        '9.5': '2.375rem', // 37.5px for weapon icons
+      },
     },
   },
   plugins: [],

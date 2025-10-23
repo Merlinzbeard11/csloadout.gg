@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { POPULAR_CS2_ITEMS } from '@/lib/steam';
+import { enrichItemData } from '@/lib/cs2-metadata';
 import Navbar from '@/components/Navbar';
 import ItemCard from '@/components/ItemCard';
+import Pagination from '@/components/Pagination';
 
 interface PriceData {
   market: string;
@@ -17,6 +19,24 @@ export default function Home() {
   const [prices, setPrices] = useState<PriceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Pagination configuration
+  const ITEMS_PER_PAGE = 20;
+  const totalPages = Math.ceil(POPULAR_CS2_ITEMS.length / ITEMS_PER_PAGE);
+
+  // Calculate current page items
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentItems = POPULAR_CS2_ITEMS.slice(startIndex, endIndex);
+
+  // Handle page change with scroll reset
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of grid smoothly
+    gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   useEffect(() => {
     async function fetchPrices() {
@@ -57,7 +77,7 @@ export default function Home() {
   const lowest = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-gray-900 antialiased">
       <Navbar />
 
       {/* Main Content with top padding for fixed navbar */}
@@ -74,18 +94,42 @@ export default function Home() {
           </header>
 
           {/* Item Grid Section */}
-          <section className="mb-12">
-            <h2 className="text-2xl font-semibold text-white mb-6">Popular Items</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {POPULAR_CS2_ITEMS.map((item) => (
-                <ItemCard
-                  key={item}
-                  itemName={item}
-                  isSelected={item === itemName}
-                  onClick={() => setItemName(item)}
-                />
-              ))}
+          <section className="mb-12" ref={gridRef}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-semibold text-white">Popular Items</h2>
+              <p className="text-sm text-gray-400">
+                Page {currentPage} of {totalPages} ({POPULAR_CS2_ITEMS.length} total items)
+              </p>
             </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {currentItems.map((item) => {
+                const enrichedItem = enrichItemData(item);
+                // Find price for this item from prices array
+                const itemPrice = prices.find(p => p.market)?.price;
+
+                return (
+                  <ItemCard
+                    key={item}
+                    itemName={item}
+                    isSelected={item === itemName}
+                    onClick={() => setItemName(item)}
+                    rarity={enrichedItem.rarity}
+                    wear={enrichedItem.wear}
+                    floatValue={enrichedItem.floatValue}
+                    price={item === itemName ? itemPrice : undefined}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            )}
           </section>
 
           {/* Price Comparison Section */}
