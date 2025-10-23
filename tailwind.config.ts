@@ -18,6 +18,10 @@ const config: Config = {
           red: "#D32CE6",
           gold: "#FFD700",
         },
+        gray: {
+          750: "#2b2d31",
+          950: "#0a0a0a",
+        },
       },
     },
   },
