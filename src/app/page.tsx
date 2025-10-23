@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSteamMarketItem, POPULAR_CS2_ITEMS } from '@/lib/steam';
-import { getCSFloatMarketItem } from '@/lib/csfloat';
-import { getSkinportMarketItem } from '@/lib/skinport';
+import { POPULAR_CS2_ITEMS } from '@/lib/steam';
 
 interface PriceData {
   market: string;
@@ -24,45 +22,25 @@ export default function Home() {
       setError(null);
 
       try {
-        // Fetch prices from all 3 marketplaces in parallel
-        const [steamItem, csFloatItem, skinportItem] = await Promise.all([
-          getSteamMarketItem(itemName),
-          getCSFloatMarketItem(itemName),
-          getSkinportMarketItem(itemName),
-        ]);
+        // Fetch from our API route (server-side, no CORS issues)
+        const encodedItemName = encodeURIComponent(itemName);
+        const response = await fetch(`/api/prices/${encodedItemName}`);
 
-        const priceData: PriceData[] = [];
-
-        if (steamItem) {
-          priceData.push({
-            market: steamItem.market,
-            price: steamItem.price,
-            url: steamItem.url,
-          });
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}`);
         }
 
-        if (csFloatItem) {
-          priceData.push({
-            market: csFloatItem.market,
-            price: csFloatItem.price,
-            url: csFloatItem.url,
-            floatValue: csFloatItem.floatValue,
-          });
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error || 'Failed to fetch pricing data');
         }
 
-        if (skinportItem) {
-          priceData.push({
-            market: skinportItem.market,
-            price: skinportItem.price,
-            url: skinportItem.url,
-          });
-        }
-
-        if (priceData.length === 0) {
+        if (data.prices.length === 0) {
           setError('No pricing data available for this item');
         }
 
-        setPrices(priceData);
+        setPrices(data.prices);
       } catch (err) {
         console.error('Error fetching prices:', err);
         setError('Failed to fetch pricing data');
