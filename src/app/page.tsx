@@ -149,7 +149,7 @@ export default function Home() {
 
       {/* Footer Note */}
       <div className="mt-12 text-center text-gray-500 text-sm">
-        <p>Live pricing from Steam Market and CSFloat. Prices update in real-time.</p>
+        <p>Live pricing from Steam Market, CSFloat, and Skinport. Prices update in real-time.</p>
       </div>
     </div>
   );
