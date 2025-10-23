@@ -59,7 +59,7 @@ const ITEM_RARITY_MAP: Record<string, Rarity> = {
   'AK-47 | Safari Mesh': 'industrial',
 
   // Consumer (Gray/White - Common)
-  'AK-47 | Safari Mesh': 'consumer',
+  // Most consumer skins are default vanilla items
 
   // Knives (All Covert)
   'Karambit': 'covert',
