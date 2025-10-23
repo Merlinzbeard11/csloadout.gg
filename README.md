@@ -4,8 +4,9 @@ Find the cheapest CS2 skins across 26+ marketplaces.
 
 ## Features
 
-- Real-time price comparison from Steam Market and CSFloat
+- Real-time price comparison from Steam Market, CSFloat, and Skinport
 - 28+ popular CS2 items across all categories
+- Automatic lowest price detection
 - Dark gaming theme optimized for CS2 players
 - Zero operational cost
 

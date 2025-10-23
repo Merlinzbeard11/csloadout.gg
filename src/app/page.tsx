@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getSteamMarketItem, POPULAR_CS2_ITEMS } from '@/lib/steam';
 import { getCSFloatMarketItem } from '@/lib/csfloat';
+import { getSkinportMarketItem } from '@/lib/skinport';
 
 interface PriceData {
   market: string;
@@ -23,10 +24,11 @@ export default function Home() {
       setError(null);
 
       try {
-        // Fetch prices from both APIs in parallel
-        const [steamItem, csFloatItem] = await Promise.all([
+        // Fetch prices from all 3 marketplaces in parallel
+        const [steamItem, csFloatItem, skinportItem] = await Promise.all([
           getSteamMarketItem(itemName),
           getCSFloatMarketItem(itemName),
+          getSkinportMarketItem(itemName),
         ]);
 
         const priceData: PriceData[] = [];
@@ -45,6 +47,14 @@ export default function Home() {
             price: csFloatItem.price,
             url: csFloatItem.url,
             floatValue: csFloatItem.floatValue,
+          });
+        }
+
+        if (skinportItem) {
+          priceData.push({
+            market: skinportItem.market,
+            price: skinportItem.price,
+            url: skinportItem.url,
           });
         }
 
@@ -71,7 +81,7 @@ export default function Home() {
       {/* Header */}
       <header className="mb-12">
         <h1 className="text-4xl font-bold text-csgo-orange mb-2">CS Loadout</h1>
-        <p className="text-gray-400">Find the cheapest CS2 skins across 26+ marketplaces</p>
+        <p className="text-gray-400">Find the cheapest CS2 skins across multiple marketplaces</p>
       </header>
 
       {/* Item Selector */}
@@ -105,7 +115,7 @@ export default function Home() {
           {loading && (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-csgo-orange"></div>
-              <p className="mt-4 text-gray-400">Loading prices from marketplaces...</p>
+              <p className="mt-4 text-gray-400">Fetching prices from Steam Market, CSFloat, and Skinport...</p>
             </div>
           )}
 
