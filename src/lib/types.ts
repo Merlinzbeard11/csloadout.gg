@@ -51,6 +51,7 @@ export interface SearchResult {
     market: string
     currency: string
     price: number
+    url?: string
   }
   delta_7d: string
   delta_30d: string

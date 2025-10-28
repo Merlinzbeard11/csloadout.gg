@@ -134,8 +134,27 @@ export function SearchResults({ filters }: SearchResultsProps) {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold font-mono">${item.best_price.price.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">{item.best_price.market}</p>
+                  <p className="text-2xl font-bold font-mono">
+                    {item.best_price.price > 0
+                      ? `$${item.best_price.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      : 'Price not available'}
+                  </p>
+                  {item.best_price.url ? (
+                    <a
+                      href={item.best_price.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {item.best_price.market}
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">{item.best_price.market}</p>
+                  )}
                 </div>
                 <div className="text-right">
                   <div

@@ -116,7 +116,7 @@ export function getTrendingItems(limit: number = 6): ItemMetadata[] {
 /**
  * Transform ItemMetadata to SearchResult format for UI
  */
-export function itemToSearchResult(item: ItemMetadata) {
+export function itemToSearchResult(item: ItemMetadata, cachedPrice?: { marketplace: string; price: number; url: string } | null) {
   return {
     id: item.id,
     name: item.name,
@@ -128,10 +128,15 @@ export function itemToSearchResult(item: ItemMetadata) {
     images: {
       thumb: item.image || '/placeholder.svg'
     },
-    best_price: {
-      market: 'Steam',
+    best_price: cachedPrice ? {
+      market: cachedPrice.marketplace,
       currency: 'USD',
-      price: 0  // Will be fetched from API
+      price: cachedPrice.price,
+      url: cachedPrice.url
+    } : {
+      market: 'Price not available',
+      currency: 'USD',
+      price: 0
     },
     delta_7d: '+0.0%',
     delta_30d: '+0.0%',

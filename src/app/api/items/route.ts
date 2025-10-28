@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAllItems, searchItems, itemToSearchResult } from "@/lib/items"
+import { fetchBatchLowestPrices } from "@/lib/pricing"
 
 /**
  * GET /api/items
@@ -64,8 +65,15 @@ export async function GET(request: NextRequest) {
     // Apply pagination
     const paginatedItems = items.slice(offset, offset + limit)
 
-    // Convert to search result format
-    const results = paginatedItems.map(item => itemToSearchResult(item))
+    // Fetch cached prices for paginated items
+    const itemNames = paginatedItems.map(item => item.name)
+    const priceMap = await fetchBatchLowestPrices(itemNames)
+
+    // Convert to search result format with prices
+    const results = paginatedItems.map(item => {
+      const cachedPrice = priceMap.get(item.name) || null
+      return itemToSearchResult(item, cachedPrice)
+    })
 
     // Apply price filters (if we had real prices)
     // For now, we'll skip price filtering since itemToSearchResult returns placeholder prices
