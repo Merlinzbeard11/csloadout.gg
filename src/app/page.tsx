@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Search, Bell, Bookmark, Wallet, ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { mockSearchResults } from "@/lib/mock-data"
+import { getTrendingItems, itemToSearchResult } from "@/lib/items"
 
 export default function HomePage() {
+  const trendingItems = getTrendingItems(6)
+  const searchResults = trendingItems.map(item => itemToSearchResult(item))
   return (
     <div className="flex min-h-screen flex-col">
       <NavHeader />
@@ -56,7 +58,7 @@ export default function HomePage() {
             </Button>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {mockSearchResults.map((item) => (
+            {searchResults.map((item) => (
               <Link key={item.id} href={`/item/${item.id}`}>
                 <Card className="group hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10">
                   <CardHeader className="pb-4">
