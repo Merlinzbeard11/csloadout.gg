@@ -1,215 +1,211 @@
-'use client';
+import { NavHeader } from "@/components/nav-header"
+import { Footer } from "@/components/footer"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { TrendingUp, TrendingDown, Search, Bell, Bookmark, Wallet, ArrowRight } from "lucide-react"
+import Link from "next/link"
+import { mockSearchResults } from "@/lib/mock-data"
 
-import { useState, useEffect, useRef } from 'react';
-import { POPULAR_CS2_ITEMS } from '@/lib/steam';
-import { enrichItemData } from '@/lib/cs2-metadata';
-import Navbar from '@/components/Navbar';
-import ItemCard from '@/components/ItemCard';
-import Pagination from '@/components/Pagination';
-
-interface PriceData {
-  market: string;
-  price: number;
-  url: string;
-  floatValue?: number;
-}
-
-export default function Home() {
-  const [itemName, setItemName] = useState(POPULAR_CS2_ITEMS[0]);
-  const [prices, setPrices] = useState<PriceData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  // Pagination configuration
-  const ITEMS_PER_PAGE = 20;
-  const totalPages = Math.ceil(POPULAR_CS2_ITEMS.length / ITEMS_PER_PAGE);
-
-  // Calculate current page items
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentItems = POPULAR_CS2_ITEMS.slice(startIndex, endIndex);
-
-  // Handle page change with scroll reset
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    // Scroll to top of grid smoothly
-    gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  useEffect(() => {
-    async function fetchPrices() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Fetch from our API route (server-side, no CORS issues)
-        const encodedItemName = encodeURIComponent(itemName);
-        const response = await fetch(`/api/prices/${encodedItemName}`);
-
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to fetch pricing data');
-        }
-
-        if (data.prices.length === 0) {
-          setError('No pricing data available for this item');
-        }
-
-        setPrices(data.prices);
-      } catch (err) {
-        console.error('Error fetching prices:', err);
-        setError('Failed to fetch pricing data');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchPrices();
-  }, [itemName]);
-
-  const lowest = prices.length > 0 ? Math.min(...prices.map(p => p.price)) : 0;
-
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-900 antialiased">
-      <Navbar />
-
-      {/* Main Content with top padding for fixed navbar */}
-      <main className="pt-20 px-6 pb-12">
-        <div className="max-w-7xl mx-auto">
-          {/* Hero Section */}
-          <header className="mb-12 text-center">
-            <h1 className="text-5xl font-bold text-white mb-4">
-              Find the Best CS2 Skin Deals
-            </h1>
-            <p className="text-xl text-gray-400">
-              Compare prices across multiple marketplaces in real-time
-            </p>
-          </header>
-
-          {/* Item Grid Section */}
-          <section className="mb-12" ref={gridRef}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-semibold text-white">Popular Items</h2>
-              <p className="text-sm text-gray-400">
-                Page {currentPage} of {totalPages} ({POPULAR_CS2_ITEMS.length} total items)
+    <div className="flex min-h-screen flex-col">
+      <NavHeader />
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-background to-muted/20">
+          <div className="container px-4 py-24 md:py-32">
+            <div className="mx-auto max-w-3xl text-center">
+              <Badge className="mb-6 bg-primary/10 text-primary border-primary/20" variant="outline">
+                Real-time market snapshots
+              </Badge>
+              <h1 className="text-4xl font-bold tracking-tight sm:text-6xl mb-6 text-balance">
+                The pro encyclopedia for CS2 items
+              </h1>
+              <p className="text-xl text-muted-foreground mb-8 text-pretty leading-relaxed">
+                Search faster. Trade smarter. Real-time market snapshots, float & pattern analytics, and a dual-mode 3D
+                viewer.
               </p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {currentItems.map((item) => {
-                const enrichedItem = enrichItemData(item);
-                // Find price for this item from prices array
-                const itemPrice = prices.find(p => p.market)?.price;
-
-                return (
-                  <ItemCard
-                    key={item}
-                    itemName={item}
-                    isSelected={item === itemName}
-                    onClick={() => setItemName(item)}
-                    rarity={enrichedItem.rarity}
-                    wear={enrichedItem.wear}
-                    floatValue={enrichedItem.floatValue}
-                    price={item === itemName ? itemPrice : undefined}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-              />
-            )}
-          </section>
-
-          {/* Price Comparison Section */}
-          <section>
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-semibold text-white">{itemName}</h2>
-                <p className="text-sm text-gray-500">
-                  {prices.length} marketplace{prices.length !== 1 ? 's' : ''}
-                </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" asChild className="gap-2">
+                  <Link href="/search">
+                    <Search className="h-5 w-5" />
+                    Start Searching
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild className="gap-2 bg-transparent">
+                  <Link href="/price-dashboard">
+                    View Price Dashboard
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </Button>
               </div>
+            </div>
+          </div>
+        </section>
 
-              {/* Loading State */}
-              {loading && (
-                <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-csgo-orange"></div>
-                  <p className="mt-4 text-gray-400">Fetching prices from Steam Market and Skinport...</p>
-                </div>
-              )}
-
-              {/* Error State */}
-              {error && !loading && (
-                <div className="bg-red-900/30 border border-red-500 rounded-lg p-4 text-red-200">
-                  {error}
-                </div>
-              )}
-
-              {/* Price Comparison Cards */}
-              {!loading && !error && prices.length > 0 && (
-                <div className="space-y-3">
-                  {prices.map((price, idx) => (
-                    <div
-                      key={idx}
-                      className={`flex justify-between items-center p-5 rounded-lg transition-all ${
-                        price.price === lowest
-                          ? 'bg-green-900/30 border-2 border-green-500 shadow-lg'
-                          : 'bg-gray-800 border border-gray-700 hover:border-gray-600'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="text-lg font-medium text-gray-200">{price.market}</span>
-                        {price.price === lowest && (
-                          <span className="text-xs bg-green-500 text-white px-3 py-1 rounded-full font-semibold">
-                            BEST DEAL
-                          </span>
-                        )}
-                        {price.floatValue && (
-                          <span className="text-xs bg-purple-600 text-purple-100 px-3 py-1 rounded-full">
-                            Float: {price.floatValue.toFixed(4)}
-                          </span>
-                        )}
+        {/* Trending Items */}
+        <section className="container px-4 py-16">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold mb-2">Trending Items</h2>
+              <p className="text-muted-foreground">Top movers in the last 7 days</p>
+            </div>
+            <Button variant="outline" asChild>
+              <Link href="/search">View All</Link>
+            </Button>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {mockSearchResults.map((item) => (
+              <Link key={item.id} href={`/item/${item.id}`}>
+                <Card className="group hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10">
+                  <CardHeader className="pb-4">
+                    <div className="aspect-[2/1] rounded-md overflow-hidden bg-muted mb-4">
+                      <img
+                        src={item.images.thumb || "/placeholder.svg"}
+                        alt={item.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-lg leading-tight">{item.name}</CardTitle>
+                      <Badge variant="outline" className="shrink-0">
+                        {item.rarity}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-2xl font-bold font-mono">${item.best_price.price.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{item.best_price.market}</p>
                       </div>
-                      <div className="flex items-center gap-6">
-                        <span className="text-3xl font-bold text-csgo-orange">
-                          ${price.price.toLocaleString()}
-                        </span>
-                        <a
-                          href={price.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="bg-csgo-blue hover:bg-blue-600 px-6 py-3 rounded-lg text-sm font-semibold transition-all hover:scale-105"
+                      <div className="text-right">
+                        <div
+                          className={`flex items-center gap-1 text-sm font-semibold ${item.delta_7d.startsWith("+") ? "text-primary" : "text-destructive"}`}
                         >
-                          Buy Now
-                        </a>
+                          {item.delta_7d.startsWith("+") ? (
+                            <TrendingUp className="h-4 w-4" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4" />
+                          )}
+                          {item.delta_7d}
+                        </div>
+                        <p className="text-xs text-muted-foreground">7d change</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-      </main>
+                    {item.lowest_float && (
+                      <div className="mt-4 pt-4 border-t border-border/40">
+                        <p className="text-xs text-muted-foreground">
+                          Lowest float: <span className="font-mono text-foreground">{item.lowest_float}</span>
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-800 py-8">
-        <div className="max-w-7xl mx-auto px-6 text-center text-gray-500 text-sm">
-          <p>Live pricing from Steam Market and Skinport. Prices update in real-time.</p>
-        </div>
-      </footer>
+        {/* Curated Filters */}
+        <section className="border-y border-border/40 bg-muted/20">
+          <div className="container px-4 py-16">
+            <h2 className="text-3xl font-bold mb-8">Quick Filters</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              <Link href="/search?filter=budget-dopplers">
+                <Card className="group hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Budget Dopplers
+                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </CardTitle>
+                    <CardDescription>Doppler skins under $150</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/search?filter=low-float">
+                <Card className="group hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Low Float Bangers
+                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </CardTitle>
+                    <CardDescription>Items with ≤0.02 float value</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+              <Link href="/search?filter=katowice-2014">
+                <Card className="group hover:border-primary/50 transition-all hover:shadow-lg hover:shadow-primary/10 cursor-pointer">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Katowice 2014
+                      <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                    </CardTitle>
+                    <CardDescription>Legendary tournament stickers</CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Cards */}
+        <section className="container px-4 py-16">
+          <h2 className="text-3xl font-bold mb-8 text-center">Your Trading Toolkit</h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <Bookmark className="h-10 w-10 text-primary mb-4" />
+                <CardTitle>Watchlist</CardTitle>
+                <CardDescription>Track your favorite items and get notified of price changes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" asChild className="w-full bg-transparent">
+                  <Link href="/watchlist">View Watchlist</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="border-secondary/20 bg-secondary/5">
+              <CardHeader>
+                <Bell className="h-10 w-10 text-secondary mb-4" />
+                <CardTitle>Price Alerts</CardTitle>
+                <CardDescription>Set custom alerts for price drops, float values, and rare patterns</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" asChild className="w-full bg-transparent">
+                  <Link href="/alerts">Manage Alerts</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader>
+                <Wallet className="h-10 w-10 text-primary mb-4" />
+                <CardTitle>Portfolio</CardTitle>
+                <CardDescription>Track your inventory value and profit/loss over time</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" asChild className="w-full bg-transparent">
+                  <Link href="/portfolio">View Portfolio</Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card className="border-secondary/20 bg-secondary/5">
+              <CardHeader>
+                <Search className="h-10 w-10 text-secondary mb-4" />
+                <CardTitle>Advanced Search</CardTitle>
+                <CardDescription>Filter by float, pattern, wear, and 10+ marketplaces</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="outline" asChild className="w-full bg-transparent">
+                  <Link href="/search">Start Searching</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      </main>
+      <Footer />
     </div>
-  );
+  )
 }

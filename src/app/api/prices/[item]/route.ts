@@ -114,7 +114,7 @@ export async function GET(
     }
 
     if (needsCSFloat) {
-      const csFloatItem = freshResults[resultIndex++];
+      const csFloatItem = freshResults[resultIndex++] as import('@/lib/csfloat').CSFloatMarketItem | null;
       if (csFloatItem) {
         await upsertPrice(
           itemName,
@@ -190,7 +190,7 @@ export async function GET(
     }
 
     if (needsCSFloat) {
-      const csFloatItem = freshResults[resultIndex++];
+      const csFloatItem = freshResults[resultIndex++] as import('@/lib/csfloat').CSFloatMarketItem | null;
       if (csFloatItem) {
         priceData.push({
           market: csFloatItem.market,
