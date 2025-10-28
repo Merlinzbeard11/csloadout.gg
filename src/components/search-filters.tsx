@@ -21,6 +21,8 @@ interface SearchFiltersProps {
     minFloat: string
     maxFloat: string
     weapon: string
+    weaponCategory: string
+    containerType: string
     collection: string
   }
   onFiltersChange: (filters: any) => void
@@ -45,6 +47,10 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
 
   const weapons = ["AK-47", "M4A4", "M4A1-S", "AWP", "Desert Eagle", "Glock-18", "USP-S", "Karambit", "Butterfly Knife"]
 
+  const weaponCategories = ["Pistols", "SMGs", "Rifles", "Heavy", "Knives", "Gloves"]
+
+  const containerTypes = ["Weapon Case", "Sticker Capsule"]
+
   const markets = ["Steam", "Buff", "DMarket", "Skinport", "CSFloat", "Bitskins", "Skinbid"]
 
   const handleClearFilters = () => {
@@ -57,6 +63,8 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
       minFloat: "",
       maxFloat: "",
       weapon: "",
+      weaponCategory: "",
+      containerType: "",
       collection: "",
     })
     setWearRange([0, 100])
@@ -124,6 +132,50 @@ export function SearchFilters({ filters, onFiltersChange }: SearchFiltersProps) 
           </SelectContent>
         </Select>
       </div>
+
+      {/* Weapon Category */}
+      <div className="space-y-3">
+        <Label className="text-base font-semibold">Weapon Category</Label>
+        <Select
+          value={filters.weaponCategory}
+          onValueChange={(value) => onFiltersChange({ ...filters, weaponCategory: value === "all_categories" ? "" : value })}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="All categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all_categories">All categories</SelectItem>
+            {weaponCategories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Container Type - Only show when type is "case" */}
+      {(filters.type === "case" || filters.type === "capsule") && (
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">Container Type</Label>
+          <Select
+            value={filters.containerType}
+            onValueChange={(value) => onFiltersChange({ ...filters, containerType: value === "all_containers" ? "" : value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="All containers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all_containers">All containers</SelectItem>
+              {containerTypes.map((containerType) => (
+                <SelectItem key={containerType} value={containerType}>
+                  {containerType}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Rarity */}
       <div className="space-y-3">

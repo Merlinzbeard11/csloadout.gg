@@ -29,6 +29,9 @@ export function SearchResults({ filters }: SearchResultsProps) {
       if (filters.query) params.append("q", filters.query)
       if (filters.type) params.append("type", filters.type)
       if (filters.rarity) params.append("rarity", filters.rarity)
+      if (filters.weapon) params.append("weapon", filters.weapon)
+      if (filters.weaponCategory) params.append("weapon_category", filters.weaponCategory)
+      if (filters.containerType) params.append("container_type", filters.containerType)
       if (filters.minPrice) params.append("minPrice", filters.minPrice)
       if (filters.maxPrice) params.append("maxPrice", filters.maxPrice)
 

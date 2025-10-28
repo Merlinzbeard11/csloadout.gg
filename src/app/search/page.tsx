@@ -23,6 +23,8 @@ function SearchPageContent() {
     minFloat: searchParams.get("minFloat") || "",
     maxFloat: searchParams.get("maxFloat") || "",
     weapon: searchParams.get("weapon") || "",
+    weaponCategory: searchParams.get("weapon_category") || "",
+    containerType: searchParams.get("container_type") || "",
     collection: searchParams.get("collection") || "",
   })
 
