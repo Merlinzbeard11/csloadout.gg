@@ -1,7 +1,7 @@
 export interface Item {
   id: string
   name: string
-  type: "weapon_skin" | "sticker" | "case" | "capsule" | "agent" | "patch" | "music_kit" | "graffiti" | "souvenir"
+  type: "weapon_skin" | "knife" | "gloves" | "sticker" | "case" | "capsule" | "agent" | "patch" | "music_kit" | "graffiti" | "souvenir"
   weapon?: string
   finish?: string
   paint_index?: number

@@ -59,19 +59,25 @@ export async function getItemWithPrices(itemMetadata: ItemMetadata): Promise<Ite
   return {
     id: itemMetadata.id,
     name: itemMetadata.name,
-    type: itemMetadata.type,
+    type: itemMetadata.type as Item['type'],
     weapon: itemMetadata.weapon,
     finish: itemMetadata.finish,
-    paint_index: itemMetadata.paint_index,
+    paint_index: undefined,
     rarity: itemMetadata.rarity,
     collection: itemMetadata.collection,
-    case: itemMetadata.case,
+    case: undefined,
     release_year: itemMetadata.release_year,
-    float_min: itemMetadata.float_min,
-    float_max: itemMetadata.float_max,
-    color_hue: itemMetadata.color_hue,
-    known_rare_patterns: itemMetadata.known_rare_patterns,
-    images: itemMetadata.images,
+    float_min: itemMetadata.min_float,
+    float_max: itemMetadata.max_float,
+    color_hue: undefined,
+    known_rare_patterns: undefined,
+    images: itemMetadata.image ? {
+      thumb: itemMetadata.image,
+      hero: itemMetadata.image,
+    } : {
+      thumb: '',
+      hero: '',
+    },
     markets: prices.length > 0 ? prices : [
       // Fallback placeholder if API fails
       {
@@ -82,7 +88,7 @@ export async function getItemWithPrices(itemMetadata: ItemMetadata): Promise<Ite
         last_seen: new Date().toISOString(),
       }
     ],
-    popularity: itemMetadata.popularity,
+    popularity: 0,
   }
 }
 
