@@ -1,21 +1,35 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type React from "react"
+import type { Metadata } from "next"
+import { GeistSans } from "geist/font/sans"
+import { GeistMono } from "geist/font/mono"
+import { Analytics } from "@vercel/analytics/next"
+import "./globals.css"
+import { Toaster } from "@/components/ui/toaster"
+import { CommandPalette } from "@/components/command-palette"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
-  title: "CS Loadout - Find the Cheapest CS2 Skins",
-  description: "Compare CS2 skin prices across 26+ marketplaces and find the best deals",
-};
+  title: "CSLoadout.gg - CS2 Item Encyclopedia & Trading Helper",
+  description:
+    "Search faster. Trade smarter. Real-time market snapshots, float & pattern analytics, and a dual-mode 3D viewer.",
+  generator: "v0.app",
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
-        {children}
+    <html lang="en" className="dark">
+      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+        <Suspense fallback={null}>
+          {children}
+          <CommandPalette />
+          <Toaster />
+        </Suspense>
+        <Analytics />
       </body>
     </html>
-  );
+  )
 }
