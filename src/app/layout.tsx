@@ -5,7 +5,7 @@ import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
-import { CommandPalette } from "@/components/command-palette"
+// import { CommandPalette } from "@/components/command-palette" // TODO: Create command palette component
 import { Suspense } from "react"
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ export default function RootLayout({
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <Suspense fallback={null}>
           {children}
-          <CommandPalette />
+          {/* <CommandPalette /> */}
           <Toaster />
         </Suspense>
         <Analytics />
