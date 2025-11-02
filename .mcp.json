@@ -1,0 +1,14 @@
+{
+	"mcpServers": {
+		"memento": {
+		"command": "/Users/merlinzbeard/projects/memento-v2.1.0/client/Memento.McpClient",
+		"args": ["--stdio-bridge", "http://localhost:5100/mcp"],
+		"env": {
+ 			"MEMENTO_USER": "claude-code",
+			"MEMENTO_AUTO_ARCHIVE": "true",
+			"MEMENTO_DASHBOARD_ID": "memento-native-dashboard",
+			"MEMENTO_DASHBOARD_URL": "http://localhost:5101"
+ 			}
+ 		}
+	}
+}
