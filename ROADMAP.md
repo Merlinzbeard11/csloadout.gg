@@ -81,7 +81,7 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 ### Epic: Casual Player Features
 
 #### P0 - Must Ship
-- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **In Progress** (Phases 1-3 Complete ✅)
+- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **In Progress** (Phases 1-4 Complete ✅)
   - **Phase 1 Complete:** Database Foundation (2 days, 300 LOC)
     - CosmeticCategory model (10 categories)
     - WeaponUsagePriority model (10 weapons with budget weights)
@@ -101,6 +101,13 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
     - 23 tests passing (presets, custom, validation, performance)
     - Floating-point precision handling with rounding error distribution
     - Performance: <50ms execution, handles $10-$10,000 budgets
+  - **Phase 4 Complete:** Basic API Endpoints (1 day, 500 LOC)
+    - 6 REST endpoints: list, create, retrieve, update, delete, allocate
+    - Next.js 14 App Router route handlers with authentication
+    - Unique slug generation with collision handling
+    - 20 tests passing (CRUD + auth + allocation)
+    - Response format consistency (success/error structure)
+    - HTTP status codes: 200, 201, 204, 400, 401, 403, 404, 500
 
 #### P1 - Should Have
 - [ ] [09-price-alerts.md](./features/09-price-alerts.md) - Basic Price Alerts - **Not Started**
