@@ -89,10 +89,10 @@ export const getSession = cache(async (): Promise<Session | null> => {
 
 /**
  * Require authentication - redirects if not authenticated
- * 
+ *
  * Use in Server Components that require authentication.
  * Redirects to sign-in page if not authenticated.
- * 
+ *
  * @returns Session (guaranteed non-null due to redirect)
  */
 export async function requireAuth(): Promise<Session> {
@@ -103,4 +103,68 @@ export async function requireAuth(): Promise<Session> {
   }
 
   return session;
+}
+
+/**
+ * Get session from NextRequest (for API routes)
+ *
+ * API routes receive NextRequest instead of using cookies() from next/headers.
+ * This function extracts session token from request cookies.
+ *
+ * @param request NextRequest object from API route
+ * @returns Session object or null if not authenticated/expired
+ */
+export async function getSessionFromRequest(request: Request): Promise<Session | null> {
+  // Extract session token from cookie header
+  const cookieHeader = request.headers.get('cookie');
+  if (!cookieHeader) {
+    return null;
+  }
+
+  // Parse cookies manually (Next.js Request doesn't have .cookies)
+  const cookies = Object.fromEntries(
+    cookieHeader.split('; ').map(c => {
+      const [key, ...v] = c.split('=');
+      return [key, v.join('=')];
+    })
+  );
+
+  const sessionToken = cookies['session_token'];
+  if (!sessionToken) {
+    return null;
+  }
+
+  // Query session with user data
+  const session = await prisma.session.findUnique({
+    where: {
+      session_token: sessionToken,
+    },
+    include: {
+      user: true,
+    },
+  });
+
+  if (!session) {
+    return null;
+  }
+
+  // Check if session expired
+  if (session.expires < new Date()) {
+    return null;
+  }
+
+  // Return session with user data
+  return {
+    user: {
+      id: session.user.id,
+      steamId: session.user.steam_id,
+      personaName: session.user.persona_name,
+      profileUrl: session.user.profile_url,
+      avatar: session.user.avatar,
+      hasCS2Game: session.user.has_cs2_game,
+      lastLogin: session.user.last_login,
+    },
+    sessionToken: session.session_token,
+    expires: session.expires,
+  };
 }
