@@ -228,3 +228,34 @@ model MarketplacePrice {
   @@index([last_updated]) // Freshness queries (stale data detection)
   @@index([item_id, total_cost]) // Composite: find cheapest price for item (optimal)
 }
+
+// Feature 05: Fee Transparency & Total Cost Calculator
+// Platform-wide fee configuration for accurate fee calculations
+// BDD Reference: features/05-fee-transparency.feature:7-14
+//
+// Critical Gotcha: PostgreSQL DECIMAL vs MONEY type
+// - Use DECIMAL(5,2) for percentages (e.g., 15.00% stored as 15.00)
+// - MONEY type has locale issues and limited precision
+// - Decimal ensures consistent cross-platform calculations
+model PlatformFeeConfig {
+  // Platform identifier (primary key)
+  platform String @id // "steam", "csfloat", "csmoney", "buff163", "dmarket", "tradeit"
+
+  // Fee percentages (DECIMAL for precision)
+  // Gotcha addressed: Using Decimal instead of Float for money calculations
+  buyer_fee_percent      Decimal @default(0) @db.Decimal(5, 2) // Buyer fee (0.00 to 999.99%)
+  seller_fee_percent     Decimal @default(0) @db.Decimal(5, 2) // Seller fee (0.00 to 999.99%)
+  hidden_markup_percent  Decimal @default(0) @db.Decimal(5, 2) // Hidden markup (CS.MONEY bot markup: 20.00%)
+
+  // Documentation and verification
+  fee_notes     String // Human-readable fee explanation (e.g., "10% Steam fee + 5% game-specific fee")
+  last_verified DateTime? // When fees were last verified
+  source_url    String? // Link to official fee documentation
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Performance index
+  @@index([platform]) // Fast platform lookups
+}
