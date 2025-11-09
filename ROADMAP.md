@@ -81,7 +81,7 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 ### Epic: Casual Player Features
 
 #### P0 - Must Ship
-- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **In Progress** (Phases 1-4 Complete ✅)
+- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **Phase 6 Complete** ✅
   - **Phase 1 Complete:** Database Foundation (2 days, 300 LOC)
     - CosmeticCategory model (10 categories)
     - WeaponUsagePriority model (10 weapons with budget weights)
@@ -108,6 +108,38 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
     - 20 tests passing (CRUD + auth + allocation)
     - Response format consistency (success/error structure)
     - HTTP status codes: 200, 201, 204, 400, 401, 403, 404, 500
+  - **Phase 5 Complete:** Budget Input Form (1 day, 450 LOC)
+    - Create loadout form with budget + allocation sliders
+    - Real-time budget preview with category breakdown
+    - Form validation (budget $10-$100k, allocations sum to 100%)
+    - Server Action integration with Prisma + auth
+    - Redirect to /loadouts/{id} on success
+  - **Phase 6 Complete:** Item Selection UI (4 iterations, ~1,100 LOC)
+    - **Iteration 1:** Server Component + Server Actions + stub Client Components
+      - Server Component: page.tsx (329 lines) - budget calculations, category tabs
+      - Server Actions: actions.ts (387 lines) - add/remove/replace with auth + budget validation
+      - Stub Client Components: ItemBrowser, BudgetTracker, SelectedItemsList
+      - Commit: 733089e
+    - **Iteration 2:** Client Component full implementations
+      - ItemBrowser: Filters (weapon, wear, quality), search, pagination (20 items/page), grid layout
+      - BudgetTracker: Category breakdowns, progress bars, color indicators (green/yellow/red)
+      - SelectedItemsList: Grouped display, Remove/Change buttons
+      - Used MOCK_ITEMS (API integration deferred)
+      - Commit: ab64101
+    - **Iteration 3:** Database integration
+      - fetchItemsForCategory() in page.tsx with Prisma + marketplace_prices
+      - Replaced MOCK_ITEMS with real item props (Server → Client data flow)
+      - Type-safe null handling with type guards
+      - Commit: d537596
+    - **Iteration 4:** UX polish
+      - React 19 useTransition for loading states
+      - Error handling with dismissible alert banner
+      - Loading spinner during Server Actions
+      - Per-item loading state tracking
+      - Commit: bea535b
+    - **Build Status:** ✅ 3.97 kB (91.2 kB First Load)
+    - **BDD Coverage:** 20+ scenarios implemented (core functionality complete)
+    - **Remaining Gaps:** Tooltips, price range filter, search polish (5-6 scenarios)
 
 #### P1 - Should Have
 - [ ] [09-price-alerts.md](./features/09-price-alerts.md) - Basic Price Alerts - **Not Started**
