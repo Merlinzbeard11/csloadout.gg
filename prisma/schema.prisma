@@ -44,6 +44,9 @@ model Item {
   // Many-to-many: Items can appear in multiple cases
   case_items CaseItem[]
 
+  // Feature 04: One-to-many: Item has prices from multiple marketplaces
+  marketplace_prices MarketplacePrice[]
+
   // Timestamps
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -145,4 +148,48 @@ model CaseItem {
   // Indexes
   @@index([case_id]) // Fast case → items queries
   @@index([item_id]) // Fast item → cases queries
+}
+
+// Feature 04: Multi-Marketplace Price Aggregation
+// Stores current prices from multiple marketplaces for each item
+// BDD Reference: features/04-price-aggregation.feature
+model MarketplacePrice {
+  id String @id @default(uuid())
+
+  // Foreign key to Item
+  item_id String
+  item    Item   @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  // Marketplace identifier
+  platform String // "csfloat", "steam", "csmoney", "buff163", "dmarket", "tradeit"
+
+  // Pricing data
+  price                Float // Base price in specified currency
+  currency             String  @default("USD") // ISO 4217 currency code (USD, EUR, CNY, RUB)
+  seller_fee_percent   Float? // Platform seller fee percentage
+  buyer_fee_percent    Float? // Platform buyer fee percentage
+  total_cost           Float // price * (1 + total_fees/100) - what user actually pays
+
+  // Inventory & Availability
+  quantity_available Int?    // For bulk traders - how many available at this price
+  listing_url        String? // Direct link to marketplace listing
+
+  // Data freshness tracking
+  // BDD: "Display data freshness indicator" - used for Live/Stale/Paused status
+  last_updated DateTime @default(now())
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Composite unique constraint: one price per item per platform
+  // BDD: "Prevent duplicate prices for same item-platform combination"
+  @@unique([item_id, platform])
+
+  // Performance indexes
+  @@index([item_id]) // Fast lookups: all prices for an item
+  @@index([platform]) // Filter by marketplace
+  @@index([total_cost]) // Sort by price
+  @@index([last_updated]) // Freshness queries (stale data detection)
+  @@index([item_id, total_cost]) // Composite: find cheapest price for item (optimal)
 }
