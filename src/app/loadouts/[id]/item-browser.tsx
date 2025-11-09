@@ -1,16 +1,17 @@
 'use client'
 
 /**
- * ItemBrowser Client Component (Full Implementation - Iteration 3)
+ * ItemBrowser Client Component (Full Implementation - Iteration 4)
  *
  * BDD: features/08-budget-loadout-builder-phase6.feature (Scenarios 60, 86, 125+)
  * Tests: __tests__/ItemBrowser.test.tsx
  *
  * Displays items from database in filterable, paginated grid.
  * Items fetched in Server Component and passed as props.
+ * Iteration 4: Loading states, error handling, optimistic UI
  */
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 
 interface MarketplacePrice {
   id: string
@@ -54,6 +55,9 @@ export function ItemBrowser({
   const [qualityFilter, setQualityFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [isPending, startTransition] = useTransition()
+  const [pendingItemId, setPendingItemId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const itemsPerPage = 20
 
   // Get unique weapon types from items
@@ -77,6 +81,27 @@ export function ItemBrowser({
     currentPage * itemsPerPage
   )
 
+  // Handle item selection with loading state and error handling
+  const handleItemSelect = async (itemId: string) => {
+    setError(null)
+    setPendingItemId(itemId)
+
+    startTransition(async () => {
+      try {
+        const result = await onItemSelect(loadoutId, itemId)
+
+        if (result && !result.success) {
+          setError(result.error || 'Failed to add item to loadout')
+        }
+      } catch (err) {
+        console.error('Error selecting item:', err)
+        setError('An unexpected error occurred. Please try again.')
+      } finally {
+        setPendingItemId(null)
+      }
+    })
+  }
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       {/* Header */}
@@ -84,6 +109,26 @@ export function ItemBrowser({
       <p className="text-sm text-gray-600 mb-4">
         Budget: ${categoryBudget.toFixed(2)} | Remaining: ${remainingBudget.toFixed(2)}
       </p>
+
+      {/* Error Alert */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+          <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-800">{error}</p>
+          </div>
+          <button
+            onClick={() => setError(null)}
+            className="text-red-600 hover:text-red-800"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -210,19 +255,35 @@ export function ItemBrowser({
                 )}
 
                 <button
-                  onClick={() => onItemSelect(loadoutId, item.id)}
-                  disabled={isOverBudget || isSelected || bestPrice === 0}
+                  onClick={() => handleItemSelect(item.id)}
+                  disabled={isOverBudget || isSelected || bestPrice === 0 || pendingItemId === item.id}
                   className={`
-                    w-full mt-2 px-3 py-1 text-xs font-medium rounded
+                    w-full mt-2 px-3 py-1 text-xs font-medium rounded flex items-center justify-center gap-1
                     ${isOverBudget || bestPrice === 0
                       ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                       : isSelected
                       ? 'bg-green-100 text-green-700'
+                      : pendingItemId === item.id
+                      ? 'bg-blue-400 text-white cursor-wait'
                       : 'bg-blue-600 text-white hover:bg-blue-700'
                     }
                   `}
                 >
-                  {bestPrice === 0 ? 'No Price' : isOverBudget ? 'Over Budget' : isSelected ? 'Selected' : 'Add to Loadout'}
+                  {pendingItemId === item.id && (
+                    <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {pendingItemId === item.id
+                    ? 'Adding...'
+                    : bestPrice === 0
+                    ? 'No Price'
+                    : isOverBudget
+                    ? 'Over Budget'
+                    : isSelected
+                    ? 'Selected'
+                    : 'Add to Loadout'}
                 </button>
               </div>
             )
