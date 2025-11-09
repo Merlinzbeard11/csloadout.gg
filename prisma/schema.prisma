@@ -47,6 +47,9 @@ model Item {
   // Feature 04: One-to-many: Item has prices from multiple marketplaces
   marketplace_prices MarketplacePrice[]
 
+  // Feature 07: Items can appear in multiple user inventories
+  inventory_items InventoryItem[]
+
   // Timestamps
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -289,8 +292,9 @@ model User {
   last_login  DateTime  @default(now()) // Last authentication timestamp
 
   // Relationships
-  accounts Account[]
-  sessions Session[]
+  accounts  Account[]
+  sessions  Session[]
+  inventory UserInventory? // Feature 07: One-to-one inventory relationship
 
   // Timestamps
   created_at DateTime @default(now())
@@ -358,4 +362,128 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Feature 07: Basic Inventory Import
+// User inventory cache with sync status and privacy handling
+// BDD Reference: features/07-inventory-import.feature
+//
+// Critical Gotchas:
+// - Steam inventory endpoint: https://steamcommunity.com/inventory/{steamId}/730/2
+// - IEconItems_730/GetPlayerItems is PERMANENTLY DISABLED (use new endpoint)
+// - Rate limiting: 4-6 requests before 429 errors (reality vs 100K/day documented)
+// - Cache TTL: 6 hours minimum to avoid rate limits
+// - GDPR: 90-day auto-deletion for inactive users
+// - Private inventories: ~30% of Steam users have private inventories
+model UserInventory {
+  id String @id @default(uuid())
+
+  // Foreign key to User
+  user_id  String @unique // One inventory per user
+  user     User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  steam_id String // Denormalized for API calls (avoid join)
+
+  // Inventory metadata
+  total_items  Int     @default(0) // Count of items in inventory
+  total_value  Decimal @default(0) @db.Decimal(10, 2) // Sum of all item values (USD)
+
+  // Sync status tracking
+  // BDD: "Cache prevents redundant API calls" - 6 hour TTL
+  last_synced DateTime @default(now())
+  sync_status String   @default("success") // "success", "private", "rate_limited", "error"
+  error_message String? // Detailed error for debugging
+
+  // Privacy handling
+  // BDD: "Handle private inventory gracefully" - detect privacy changes
+  is_public Boolean @default(true) // Steam inventory privacy state
+
+  // Pagination cursor for large inventories (>2500 items)
+  // BDD: "Import large inventory with pagination"
+  last_asset_id String? // Steam asset ID cursor for incremental sync
+
+  // GDPR compliance
+  // BDD: "Auto-delete stale inventories (90-day retention)"
+  consent_given    Boolean   @default(false) // User accepted privacy policy
+  consent_date     DateTime? // When consent was granted
+  scheduled_delete DateTime? // Auto-deletion timestamp (last_login + 90 days)
+
+  // Relationships
+  items InventoryItem[]
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([user_id]) // Fast user → inventory lookup
+  @@index([last_synced]) // Stale cache detection
+  @@index([sync_status]) // Filter by status
+  @@index([scheduled_delete]) // GDPR cleanup job queries
+}
+
+// Individual inventory items
+// Stores Steam-specific data + cached pricing
+// BDD Reference: features/07-inventory-import.feature
+model InventoryItem {
+  id String @id @default(uuid())
+
+  // Foreign keys
+  inventory_id String
+  inventory    UserInventory @relation(fields: [inventory_id], references: [id], onDelete: Cascade)
+
+  item_id String? // Link to items table (NULL if not matched)
+  item    Item?   @relation(fields: [item_id], references: [id], onDelete: SetNull)
+
+  // Steam-specific identifiers
+  // BDD: "Extract float value from Steam API response"
+  steam_asset_id   String @unique // Unique Steam inventory asset ID
+  market_hash_name String // Steam market_hash_name for matching
+
+  // Item attributes from Steam API
+  // Gotcha: Use Decimal for float_value to preserve precision
+  float_value  Decimal? @db.Decimal(10, 8) // Float value (0.00000000 to 1.00000000)
+  pattern_seed Int? // Pattern seed for Case Hardened, etc.
+  wear         String? // "factory_new", "minimal_wear", "field_tested", "well_worn", "battle_scarred"
+  quality      String? // "normal", "stattrak", "souvenir"
+
+  // Custom attributes
+  // BDD: "Handle custom name tags correctly"
+  custom_name String? // User-applied name tag
+
+  // Stickers (JSONB for flexible schema)
+  // BDD: "Display applied stickers on item"
+  // Gotcha: Use JSONB over JSON for better query performance
+  // Structure: [{ name: "Natus Vincere (Holo)", position: 1, wear: 0.5 }, ...]
+  stickers Json? // Array of sticker objects
+
+  // Trade restrictions
+  // BDD: "Display trade-locked items with hold date"
+  can_trade        Boolean   @default(true)
+  trade_hold_until DateTime? // When trade lock expires
+
+  // Pricing cache (from price aggregation API)
+  // BDD: "Display inventory value comparison across platforms"
+  current_value Decimal? @db.Decimal(10, 2) // Current market value (USD)
+  best_platform String? // Platform with best price ("csfloat", "steam", etc.)
+
+  // Acquisition tracking
+  acquired_at DateTime? // When item was added to inventory (if available)
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Composite unique: prevent duplicate items in same inventory
+  @@unique([inventory_id, steam_asset_id])
+
+  // Performance indexes
+  @@index([inventory_id]) // Fast inventory → items queries
+  @@index([item_id]) // Fast item lookups
+  @@index([current_value]) // Sort by value
+  @@index([market_hash_name]) // Item matching queries
+  @@index([trade_hold_until]) // Trade lock expiration queries
+
+  // JSONB index for stickers (GIN index created via raw SQL migration)
+  // See: prisma/migrations/20251109_add_inventory_tables/migration.sql
+  // CREATE INDEX idx_inventory_items_stickers_gin ON inventory_items USING GIN (stickers);
 }
