@@ -596,6 +596,12 @@ model Loadout {
   budget      Decimal @db.Decimal(10, 2) // User's budget limit
   actual_cost Decimal @default(0) @db.Decimal(10, 2) // Sum of all items added
 
+  // Custom budget allocation (user-configurable percentages)
+  // Overrides preset prioritize modes (balance, price, quality, color_match)
+  // Structure: { weapon_skins: 50.00, knife: 30.00, gloves: 20.00, agents: 0.00, music_kit: 0.00, charms: 0.00 }
+  // Validation: All percentages must sum to 100.00, each value 0.00-100.00
+  custom_allocation Json? // JSONB for flexible user-defined budget splits
+
   // Visibility
   is_public Boolean @default(false) // Shareable publicly
 

@@ -193,6 +193,78 @@ Feature: Loadout Storage System
     And the loadout should support this new cosmetic category
 
   # ============================================================================
+  # Custom Budget Allocation (User-Configurable Percentages)
+  # ============================================================================
+
+  Scenario: Set custom allocation percentages
+    Given I have a loadout "Custom Allocation Test"
+    When I set custom allocation:
+      | category     | percentage |
+      | weapon_skins | 50.00      |
+      | knife        | 30.00      |
+      | gloves       | 20.00      |
+      | agents       | 0.00       |
+      | music_kit    | 0.00       |
+      | charms       | 0.00       |
+    Then the loadout should save custom_allocation as JSONB
+    And custom_allocation should match input percentages
+
+  Scenario: Custom allocation percentages must sum to 100%
+    Given I have a loadout "Validation Test"
+    When I try to set custom allocation:
+      | category     | percentage |
+      | weapon_skins | 60.00      |
+      | knife        | 30.00      |
+      | gloves       | 5.00       |
+    Then I should get error "Custom allocation must sum to 100.00%"
+    And the custom_allocation should not be saved
+
+  Scenario: Custom allocation overrides preset prioritize mode
+    Given I have a loadout with prioritize "balance"
+    When I set custom allocation percentages
+    Then the algorithm should use custom_allocation
+    And the algorithm should ignore prioritize preset
+
+  Scenario: Custom allocation with zero percentages excludes categories
+    Given I have a loadout "Weapons Only"
+    When I set custom allocation:
+      | category     | percentage |
+      | weapon_skins | 100.00     |
+      | knife        | 0.00       |
+      | gloves       | 0.00       |
+      | agents       | 0.00       |
+      | music_kit    | 0.00       |
+      | charms       | 0.00       |
+    Then knife should receive $0.00 allocation
+    And gloves should receive $0.00 allocation
+    And weapon_skins should receive 100% of budget
+
+  Scenario: Custom allocation percentages support decimals
+    Given I have a loadout with budget $100.00
+    When I set custom allocation:
+      | category     | percentage |
+      | weapon_skins | 33.33      |
+      | knife        | 33.33      |
+      | gloves       | 33.34      |
+    Then the total should equal 100.00%
+    And weapon_skins should receive $33.33
+    And knife should receive $33.33
+    And gloves should receive $33.34
+
+  Scenario: Custom allocation validates percentage range (0-100)
+    Given I have a loadout "Range Validation"
+    When I try to set custom allocation with weapon_skins = 150.00
+    Then I should get error "Percentage must be between 0.00 and 100.00"
+    When I try to set custom allocation with knife = -10.00
+    Then I should get error "Percentage must be between 0.00 and 100.00"
+
+  Scenario: Clear custom allocation to use presets again
+    Given I have a loadout with custom allocation set
+    When I clear custom_allocation field
+    Then the loadout should use prioritize preset mode
+    And custom_allocation should be NULL
+
+  # ============================================================================
   # Data Integrity
   # ============================================================================
 
