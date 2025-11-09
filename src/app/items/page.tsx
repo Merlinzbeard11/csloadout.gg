@@ -1,31 +1,35 @@
 /**
  * Browse Items Page (/items)
  *
- * BDD Reference: features/01-item-database.feature:11-17
+ * BDD Reference: features/01-item-database.feature:11-30
  *   - Browse all items with pagination (50 per page)
+ *   - Search with fuzzy matching (PostgreSQL trigram)
  *   - Item cards with image, name, rarity
  *   - Lazy loading images (via ItemCard)
  *   - Pagination controls
  *
  * Implementation:
  * - React Server Component (async, server-side data fetching)
- * - Fetches from GET /api/items with pagination
+ * - Fetches from GET /api/items with pagination + search
+ * - SearchBox client component for interactive search
  * - Responsive grid layout (2 cols mobile → 5 cols desktop)
  * - ItemCard component for display
- * - URL-based pagination via searchParams
+ * - URL-based pagination and search via searchParams
  */
 
 import { Metadata } from 'next';
 import ItemCard from '@/components/ItemCard';
+import SearchBox from '@/components/SearchBox';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Browse CS2 Items | csloadout.gg',
-  description: 'Browse all Counter-Strike 2 items including skins, stickers, agents, and more.',
+  description: 'Browse and search Counter-Strike 2 items including skins, stickers, agents, and more with fuzzy matching.',
 };
 
 interface ItemsPageProps {
   searchParams?: {
+    q?: string;
     page?: string;
     pageSize?: string;
   };
@@ -52,11 +56,21 @@ interface ItemsResponse {
 /**
  * Fetch items from API
  * Server-side fetch with error handling
+ * Supports search query for fuzzy matching
  */
-async function fetchItems(page: number, pageSize: number): Promise<ItemsResponse | null> {
+async function fetchItems(page: number, pageSize: number, searchQuery?: string): Promise<ItemsResponse | null> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-    const url = `${baseUrl}/api/items?page=${page}&pageSize=${pageSize}`;
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (searchQuery) {
+      params.set('q', searchQuery);
+    }
+
+    const url = `${baseUrl}/api/items?${params.toString()}`;
 
     const response = await fetch(url, {
       cache: 'no-store', // Disable caching for fresh data
@@ -83,9 +97,10 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   // Parse pagination params with defaults
   const page = parseInt(searchParams?.page || '1', 10);
   const pageSize = parseInt(searchParams?.pageSize || '50', 10);
+  const searchQuery = searchParams?.q?.trim() || undefined;
 
   // Fetch items from API
-  const data = await fetchItems(page, pageSize);
+  const data = await fetchItems(page, pageSize, searchQuery);
 
   // Error state
   if (!data) {
@@ -109,6 +124,17 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
 
   const { items, total, totalPages } = data;
 
+  // Helper function to build pagination URLs
+  const buildPaginationUrl = (pageNum: number) => {
+    const params = new URLSearchParams();
+    params.set('page', pageNum.toString());
+    params.set('pageSize', pageSize.toString());
+    if (searchQuery) {
+      params.set('q', searchQuery);
+    }
+    return `/items?${params.toString()}`;
+  };
+
   // Empty state
   if (items.length === 0) {
     return (
@@ -127,12 +153,25 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     <div className="min-h-screen bg-cs2-darker text-cs2-light">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Browse CS2 Items</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold mb-2">
+            {searchQuery ? 'Search CS2 Items' : 'Browse CS2 Items'}
+          </h1>
           <p className="text-cs2-light/60">
-            Showing {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, total)} of {total.toLocaleString()} items
+            {searchQuery ? (
+              <>
+                Search results for "{searchQuery}" - {total.toLocaleString()} {total === 1 ? 'item' : 'items'} found
+              </>
+            ) : (
+              <>
+                Showing {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, total)} of {total.toLocaleString()} items
+              </>
+            )}
           </p>
         </div>
+
+        {/* Search Box */}
+        <SearchBox />
 
         {/* Item Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
@@ -147,7 +186,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
             {/* Previous Button */}
             {page > 1 ? (
               <Link
-                href={`/items?page=${page - 1}&pageSize=${pageSize}`}
+                href={buildPaginationUrl(page - 1)}
                 className="px-4 py-2 bg-cs2-dark border border-cs2-blue/20 rounded-lg hover:border-cs2-blue/50 transition-colors"
               >
                 Previous
@@ -186,7 +225,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
                 return (
                   <Link
                     key={pageNum}
-                    href={`/items?page=${pageNum}&pageSize=${pageSize}`}
+                    href={buildPaginationUrl(pageNum)}
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       isCurrentPage
                         ? 'bg-cs2-blue text-white'
@@ -202,7 +241,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
             {/* Next Button */}
             {page < totalPages ? (
               <Link
-                href={`/items?page=${page + 1}&pageSize=${pageSize}`}
+                href={buildPaginationUrl(page + 1)}
                 className="px-4 py-2 bg-cs2-dark border border-cs2-blue/20 rounded-lg hover:border-cs2-blue/50 transition-colors"
               >
                 Next
