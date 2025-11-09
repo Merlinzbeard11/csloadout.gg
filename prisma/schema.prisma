@@ -1,0 +1,53 @@
+// Prisma schema for csloadout.gg
+// Database: PostgreSQL 18
+// Critical Gotcha: PostgreSQL 17+ requires explicit NULLS handling in unique constraints
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Item {
+  id String @id @default(uuid())
+
+  // Names (dual storage for display + search)
+  name         String // Original name from API
+  display_name String // User-facing display name
+  search_name  String // Normalized for search (lowercase, no special chars)
+  description  String?
+
+  // Classification
+  type        String // skin, sticker, case, collection, agent, graffiti, patch, music_kit
+  rarity      String? // consumer, industrial, milspec, restricted, classified, covert, contraband
+  quality     String  @default("normal") // normal, stattrak, souvenir
+  wear        String  @default("none") // factory_new, minimal_wear, field_tested, well_worn, battle_scarred, none
+  weapon_type String? // AK-47, M4A4, AWP, Knife, Gloves, etc.
+
+  // Images (multi-source fallback strategy - BDD Gotcha #1: Steam CDN URL expiration)
+  image_url          String
+  image_url_fallback String?
+  image_local_path   String?
+
+  // Skin-specific attributes
+  wear_min      Float?
+  wear_max      Float?
+  pattern_count Int?
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Composite unique constraint - prevents duplicate items
+  // PostgreSQL 17+ gotcha: Multiple NULL values allowed by default
+  // Migration will add: NULLS DISTINCT clause
+  @@unique([name, quality, wear])
+
+  // Indexes for performance
+  @@index([search_name])
+  @@index([type, rarity])
+  @@index([weapon_type])
+}
