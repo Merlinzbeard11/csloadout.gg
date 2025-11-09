@@ -12,12 +12,12 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 
 ## 📊 Quick Status
 
-| Phase | Timeline | Status | Target Users | Target MRR |
-|-------|----------|--------|--------------|------------|
-| Phase 1 | 3-4 months | Not Started | 10K | $500 |
-| Phase 2 | 6-8 months | Not Started | 50K | $15K |
-| Phase 3 | 6-8 months | Not Started | 100K | $30K |
-| Phase 4 | 12+ months | Not Started | 500K | $100K+ |
+| Phase | Timeline | Status | Progress | Target Users | Target MRR |
+|-------|----------|--------|----------|--------------|------------|
+| Phase 1 | 3-4 months | **In Progress** 🟡 | **50%** (5/10 P0) | 10K | $500 |
+| Phase 2 | 6-8 months | Not Started | 0% | 50K | $15K |
+| Phase 3 | 6-8 months | Not Started | 0% | 100K | $30K |
+| Phase 4 | 12+ months | Not Started | 0% | 500K | $100K+ |
 
 ---
 
@@ -29,20 +29,35 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 ### Epic: Wiki & Database Foundation
 
 #### P0 - Must Ship
-- [ ] [01-item-database.md](./features/01-item-database.md) - Complete Item Database - **Not Started**
-- [ ] [02-relational-browsing.md](./features/02-relational-browsing.md) - Relational Browsing System - **Not Started**
-- [ ] [03-search-filters.md](./features/03-search-filters.md) - Search & Filter System - **Not Started**
+- [x] [01-item-database.md](./features/01-item-database.md) - Complete Item Database - **Completed** ✅
+  - 9 tasks completed: Scaffolding, schema, normalization, import service, APIs, item card, browse page, search, item detail
+  - Last commit: 6be3811 (TASK 1.9 - PostgreSQL trigram fuzzy search)
+- [x] [02-relational-browsing.md](./features/02-relational-browsing.md) - Relational Browsing System - **Completed** ✅
+  - 9 tasks completed: Collections/Cases schema, Collections API, Weapons API, Cases API, CollectionCard, browse pages, weapon page, case contents
+  - Last commit: 4f8980e (TASK 2.9 - Case contents with probability validation)
+- [x] [03-search-filters.md](./features/03-search-filters.md) - Search & Filter System - **Completed** ✅
+  - 5 tasks completed: Full-text search migration, types, advanced search API, autocomplete API, SearchBox, FilterSidebar
+  - Last commit: 8918523 (Feature 03 COMPLETE - FilterSidebar)
 
 ### Epic: Price Comparison Engine
 
 #### P0 - Must Ship
-- [ ] [04-price-aggregation.md](./features/04-price-aggregation.md) - Multi-Marketplace Price Aggregation - **Not Started**
-- [ ] [05-fee-transparency.md](./features/05-fee-transparency.md) - Fee Transparency & Total Cost - **Not Started**
+- [x] [04-price-aggregation.md](./features/04-price-aggregation.md) - Multi-Marketplace Price Aggregation - **Completed** ✅
+  - 7 tasks completed: Database schema, outlier detection, currency conversion, price API, price comparison table, affiliate disclosure
+  - Last commit: f9d3d06 (TASK 4.6 - Price comparison table with tests)
+- [x] [05-fee-transparency.md](./features/05-fee-transparency.md) - Fee Transparency & Total Cost - **Completed** ✅ (MVP)
+  - 5 commits: FeeCalculator, PlatformFeeConfig table, fee calculator API, FeeBreakdown component, integration with PriceComparisonTable
+  - Last commit: 1ca7e45 (Integrate FeeBreakdown with PriceComparisonTable)
+  - MVP complete: 5/15 BDD scenarios implemented (core functionality done, advanced scenarios deferred)
 
 ### Epic: User Authentication & Personalization
 
 #### P0 - Must Ship
-- [ ] [06-steam-authentication.md](./features/06-steam-authentication.md) - Steam OpenID Authentication - **Not Started**
+- [ ] [06-steam-authentication.md](./features/06-steam-authentication.md) - Steam OpenID Authentication - **In Progress** 🟡
+  - BDD scenarios created (20 scenarios in features/06-steam-authentication.feature)
+  - Gotcha research complete (8 gotchas identified)
+  - Authoritative documentation retrieved (Steam OpenID 2.0 official docs)
+  - Next: TDD implementation
 - [ ] [07-inventory-import.md](./features/07-inventory-import.md) - Basic Inventory Import - **Not Started**
 
 ### Epic: Casual Player Features
