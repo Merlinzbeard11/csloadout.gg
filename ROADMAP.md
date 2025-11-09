@@ -87,12 +87,13 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
     - WeaponUsagePriority model (10 weapons with budget weights)
     - 23 tests passing (BDD scenarios validated)
     - Commit: 1f8ee61 (Feature 08 Phase 1 complete)
-  - **Phase 2 Complete:** Loadout Storage (2 days, 400 LOC)
+  - **Phase 2 Complete:** Loadout Storage + Custom Allocation (2 days, 600 LOC)
     - Loadout model (user-created loadouts with budget tracking)
     - LoadoutWeaponSkin model (junction table with float optimization)
-    - 13 tests passing (CRUD, queries, JSONB storage)
+    - **Enhancement:** Custom budget allocation percentages (user-configurable)
+    - 30 tests passing (13 storage + 17 custom allocation)
     - Weapon charms support (NEW - Oct 2025)
-    - Commit: 8323e1d (Feature 08 Phase 2 complete)
+    - Commits: 8323e1d (storage), df4d113 (custom allocation)
 
 #### P1 - Should Have
 - [ ] [09-price-alerts.md](./features/09-price-alerts.md) - Basic Price Alerts - **Not Started**
