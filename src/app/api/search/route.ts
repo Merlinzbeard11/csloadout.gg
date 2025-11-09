@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate offset
-    const offset = (filters.page - 1) * filters.limit;
+    const offset = ((filters.page ?? 1) - 1) * (filters.limit ?? 50);
 
     // ========================================
     // Build WHERE Clause
@@ -444,9 +444,9 @@ export async function GET(request: NextRequest) {
     const response: SearchResponse = {
       items: items as any[],
       total,
-      page: filters.page,
-      limit: filters.limit,
-      totalPages: Math.ceil(total / filters.limit),
+      page: filters.page ?? 1,
+      limit: filters.limit ?? 50,
+      totalPages: Math.ceil(total / (filters.limit ?? 50)),
       facets,
       meta: {
         executionTime: Math.round(executionTime),

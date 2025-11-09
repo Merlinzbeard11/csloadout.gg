@@ -291,7 +291,7 @@ export async function GET(request: NextRequest) {
         {
           queryLength: query.length,
           exactMatches: itemSuggestions.filter((s) => s.score === 1.0).length,
-          fuzzyMatches: itemSuggestions.filter((s) => s.score < 1.0).length,
+          fuzzyMatches: itemSuggestions.filter((s) => (s.score ?? 0) < 1.0).length,
         }
       );
     }
