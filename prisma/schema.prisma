@@ -37,6 +37,13 @@ model Item {
   wear_max      Float?
   pattern_count Int?
 
+  // Relationships (Feature 02: Relational Browsing)
+  collection_id String?
+  collection    Collection? @relation(fields: [collection_id], references: [id], onDelete: SetNull)
+
+  // Many-to-many: Items can appear in multiple cases
+  case_items CaseItem[]
+
   // Timestamps
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -50,4 +57,92 @@ model Item {
   @@index([search_name])
   @@index([type, rarity])
   @@index([weapon_type])
+  @@index([collection_id]) // Fast collection → items queries
+}
+
+model Collection {
+  id String @id @default(uuid())
+
+  // Basic Information
+  name        String
+  slug        String  @unique // URL-friendly identifier
+  description String?
+  image_url   String
+
+  // Metadata
+  release_date      DateTime
+  is_discontinued   Boolean   @default(false)
+  discontinued_date DateTime?
+
+  // URL Management (Gotcha #7: URL slug changes break backlinks)
+  previous_slugs String[] @default([]) // Array of old slugs for 301 redirects
+
+  // Relationships
+  items Item[] // One-to-many: Collection has many items
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([slug]) // Fast URL lookups
+  @@index([release_date]) // Sort by newest first
+}
+
+model Case {
+  id String @id @default(uuid())
+
+  // Basic Information
+  name        String
+  slug        String  @unique // URL-friendly identifier
+  description String?
+  image_url   String
+
+  // Metadata
+  key_price    Float
+  release_date DateTime
+
+  // URL Management
+  previous_slugs String[] @default([]) // Historical slugs for redirects
+
+  // Relationships
+  case_items CaseItem[] // Many-to-many through join table
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([slug]) // Fast URL lookups
+  @@index([release_date])
+}
+
+// Many-to-many join table: Case ↔ Item
+// Stores drop probabilities for each case-item pair
+model CaseItem {
+  id String @id @default(uuid())
+
+  // Foreign keys
+  case_id String
+  case    Case   @relation(fields: [case_id], references: [id], onDelete: Cascade)
+
+  item_id String
+  item    Item   @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  // Drop probability (Gotcha #4: Must sum to 100% per case)
+  drop_probability Float // Percentage (0.79 for Covert, 79.92 for Consumer/Industrial, etc.)
+
+  // Special item flag (knives, gloves highlighted in UI)
+  is_special_item Boolean @default(false)
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Composite unique: prevent duplicate case-item pairs
+  @@unique([case_id, item_id])
+
+  // Indexes
+  @@index([case_id]) // Fast case → items queries
+  @@index([item_id]) // Fast item → cases queries
 }
