@@ -1,0 +1,274 @@
+/**
+ * Loadout Detail Page (Server Component)
+ *
+ * BDD: features/08-budget-loadout-builder-phase6.feature
+ * Tests: __tests__/loadout-detail-page.test.tsx
+ *
+ * Responsibilities:
+ * - Fetch loadout by ID from database
+ * - Fetch selected items (LoadoutWeaponSkin with Item + Prices)
+ * - Calculate budget summary (total, spent, remaining)
+ * - Calculate category budgets from custom_allocation
+ * - Render client components (ItemBrowser, BudgetTracker, SelectedItemsList)
+ * - Require authentication
+ * - Handle authorization (user must own loadout)
+ * - Handle 404 (loadout not found)
+ */
+
+import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { requireAuth } from '@/lib/auth/session'
+import { prisma } from '@/lib/prisma'
+import { ItemBrowser } from './item-browser'
+import { BudgetTracker } from './budget-tracker'
+import { SelectedItemsList } from './selected-items-list'
+import { addItemToLoadoutAction, removeItemFromLoadoutAction, replaceItemAction } from './actions'
+
+interface PageProps {
+  params: { id: string }
+  searchParams: { category?: string; page?: string }
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const loadout = await prisma.loadout.findUnique({
+    where: { id: params.id },
+    select: { name: true }
+  })
+
+  if (!loadout) {
+    return {
+      title: 'Loadout Not Found - CSLoadout.gg'
+    }
+  }
+
+  return {
+    title: `${loadout.name} - CSLoadout.gg`,
+    description: `View and customize your CS2 loadout: ${loadout.name}`,
+    robots: 'noindex, nofollow' // User-specific page
+  }
+}
+
+export default async function LoadoutDetailPage({ params, searchParams }: PageProps) {
+  // Require authentication
+  const session = await requireAuth()
+
+  // Fetch loadout with selected items
+  const loadout = await prisma.loadout.findUnique({
+    where: { id: params.id },
+    include: {
+      weapon_skins: {
+        include: {
+          item: {
+            include: {
+              marketplace_prices: {
+                orderBy: {
+                  total_cost: 'asc' // Cheapest first
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  // Handle 404
+  if (!loadout) {
+    notFound()
+  }
+
+  // Handle authorization (user must own loadout)
+  if (loadout.user_id !== session.user.id) {
+    return (
+      <main className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h1 className="text-2xl font-bold text-red-900 mb-2">Unauthorized</h1>
+            <p className="text-red-700">You do not have permission to view this loadout.</p>
+          </div>
+        </div>
+      </main>
+    )
+  }
+
+  // Calculate budget summary
+  const totalBudget = Number(loadout.budget)
+  const spent = Number(loadout.actual_cost)
+  const remaining = totalBudget - spent
+
+  // Parse custom allocation (JSONB)
+  const allocation = (loadout.custom_allocation as any) || {
+    weapon_skins: 70.00,
+    knife: 15.00,
+    gloves: 10.00,
+    agents: 3.00,
+    music_kit: 2.00,
+    charms: 0.00
+  }
+
+  // Calculate category budgets
+  const categoryBudgets = {
+    weapon_skins: (totalBudget * allocation.weapon_skins) / 100,
+    knife: (totalBudget * allocation.knife) / 100,
+    gloves: (totalBudget * allocation.gloves) / 100,
+    agents: (totalBudget * allocation.agents) / 100,
+    music_kit: (totalBudget * allocation.music_kit) / 100,
+    charms: (totalBudget * allocation.charms) / 100
+  }
+
+  // Calculate spent per category
+  const categorySpent = loadout.weapon_skins.reduce((acc, lwsk) => {
+    const category = getCategoryFromWeaponType(lwsk.weapon_type)
+    const price = lwsk.item.marketplace_prices[0]?.total_cost || 0
+    acc[category] = (acc[category] || 0) + Number(price)
+    return acc
+  }, {} as Record<string, number>)
+
+  // Default category from query params
+  const currentCategory = (searchParams.category || 'weapon_skins') as keyof typeof categoryBudgets
+
+  // Transform selected items for client component
+  const selectedItems = loadout.weapon_skins.map(lwsk => ({
+    id: lwsk.id,
+    item_id: lwsk.item_id,
+    weapon_type: lwsk.weapon_type,
+    category: getCategoryFromWeaponType(lwsk.weapon_type),
+    item: {
+      name: lwsk.item.name,
+      display_name: lwsk.item.display_name,
+      image_url: lwsk.item.image_url,
+      quality: lwsk.item.quality,
+      wear: lwsk.item.wear,
+      rarity: lwsk.item.rarity
+    },
+    price: Number(lwsk.item.marketplace_prices[0]?.total_cost || 0)
+  }))
+
+  return (
+    <main className="min-h-screen bg-gray-50 py-8" aria-label="Loadout detail page">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">{loadout.name}</h1>
+          {loadout.description && (
+            <p className="mt-2 text-gray-600">{loadout.description}</p>
+          )}
+        </div>
+
+        {/* Budget Summary */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Budget Summary</h2>
+          <div className="grid grid-cols-3 gap-6">
+            <div>
+              <p className="text-sm text-gray-600">Total Budget</p>
+              <p className="text-2xl font-bold text-gray-900">${totalBudget.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Spent</p>
+              <p className="text-2xl font-bold text-blue-600">${spent.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Remaining</p>
+              <p className="text-2xl font-bold text-green-600">${remaining.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Tabs */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px" aria-label="Category tabs">
+              {(Object.keys(categoryBudgets) as Array<keyof typeof categoryBudgets>).map(category => {
+                const budget = categoryBudgets[category]
+                const categorySpentAmount = categorySpent[category] || 0
+                const isActive = category === currentCategory
+
+                if (budget === 0) return null // Skip zero-budget categories
+
+                return (
+                  <a
+                    key={category}
+                    href={`?category=${category}`}
+                    className={`
+                      px-6 py-4 text-sm font-medium border-b-2 transition-colors
+                      ${isActive
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                    aria-current={isActive ? 'page' : undefined}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span>{formatCategoryName(category)}</span>
+                      <span className="text-xs text-gray-500">
+                        {allocation[category].toFixed(0)}% (${budget.toFixed(2)})
+                      </span>
+                    </div>
+                  </a>
+                )
+              })}
+            </nav>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Item Browser (2/3 width) */}
+          <div className="lg:col-span-2">
+            <ItemBrowser
+              category={currentCategory}
+              categoryBudget={categoryBudgets[currentCategory]}
+              remainingBudget={categoryBudgets[currentCategory] - (categorySpent[currentCategory] || 0)}
+              selectedItems={selectedItems.map(item => item.item_id)}
+              onItemSelect={addItemToLoadoutAction}
+            />
+          </div>
+
+          {/* Sidebar (1/3 width) */}
+          <div className="space-y-6">
+            {/* Budget Tracker */}
+            <BudgetTracker
+              totalBudget={totalBudget}
+              allocation={allocation}
+              selectedItems={selectedItems}
+            />
+
+            {/* Selected Items List */}
+            <SelectedItemsList
+              selectedItems={selectedItems}
+              onRemove={removeItemFromLoadoutAction}
+              onChange={replaceItemAction}
+            />
+          </div>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+/**
+ * Helper: Determine category from weapon_type
+ */
+function getCategoryFromWeaponType(weaponType: string): string {
+  if (weaponType === 'Knife') return 'knife'
+  if (weaponType === 'Gloves') return 'gloves'
+  if (weaponType.startsWith('Agent')) return 'agents'
+  if (weaponType === 'Music Kit') return 'music_kit'
+  if (weaponType === 'Charm') return 'charms'
+  return 'weapon_skins'
+}
+
+/**
+ * Helper: Format category name for display
+ */
+function formatCategoryName(category: string): string {
+  const names: Record<string, string> = {
+    weapon_skins: 'Weapon Skins',
+    knife: 'Knife',
+    gloves: 'Gloves',
+    agents: 'Agents',
+    music_kit: 'Music Kit',
+    charms: 'Charms'
+  }
+  return names[category] || category
+}
