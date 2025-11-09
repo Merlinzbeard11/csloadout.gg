@@ -259,3 +259,103 @@ model PlatformFeeConfig {
   // Performance index
   @@index([platform]) // Fast platform lookups
 }
+
+// Feature 06: Steam OpenID Authentication
+// NextAuth v5 (Auth.js) database schema
+// BDD Reference: features/06-steam-authentication.feature
+//
+// Critical Gotchas:
+// - Steam uses OpenID 2.0 (legacy), NOT OpenID Connect
+// - SteamID extracted from claimed_id: http://steamcommunity.com/openid/id/76561198012345678
+// - Session duration: 30 days (2592000 seconds)
+// - CSRF protection: state parameter required
+model User {
+  id String @id @default(uuid())
+
+  // Steam Profile Data (BDD Scenario: "Fetch and store Steam profile data")
+  steam_id String @unique // 64-bit SteamID extracted from OpenID claimed_id
+
+  // Profile Information (from ISteamUser/GetPlayerSummaries/v2)
+  persona_name    String // Steam username (can change)
+  profile_url     String // https://steamcommunity.com/id/username or /profiles/steamid
+  avatar          String // Avatar image URL from Steam CDN
+  profile_state   Int    @default(1) // 1 = configured profile, 0 = not set up
+
+  // Game Ownership (BDD Scenario: "Check CS2 game ownership")
+  has_cs2_game Boolean @default(false) // Result from ISteamUser/CheckAppOwnership (appid 730)
+
+  // Activity Tracking
+  last_logoff DateTime? // Last time user was online (Unix timestamp from API)
+  last_login  DateTime  @default(now()) // Last authentication timestamp
+
+  // Relationships
+  accounts Account[]
+  sessions Session[]
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([steam_id]) // Fast Steam profile lookups
+  @@index([last_login]) // Activity queries
+}
+
+// NextAuth Account model - stores OAuth provider details
+// BDD Scenario: "Extract SteamID from OpenID claimed identity"
+model Account {
+  id String @id @default(uuid())
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  type               String // "oauth" for Steam OpenID
+  provider           String // "steam"
+  provider_account_id String // SteamID64 from Steam
+
+  // OAuth tokens (Steam OpenID doesn't use refresh tokens)
+  refresh_token String?
+  access_token  String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Composite unique: one account per provider per user
+  @@unique([provider, provider_account_id])
+  @@index([user_id])
+}
+
+// Session model - tracks active user sessions
+// BDD Scenario: "Session expiration after 30 days"
+model Session {
+  id String @id @default(uuid())
+
+  session_token String   @unique
+  user_id       String
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  expires DateTime // Set to now() + 30 days per BDD requirements
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([user_id])
+  @@index([expires]) // Session cleanup queries
+}
+
+// VerificationToken - for email verification (not used for Steam, but required by NextAuth schema)
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
