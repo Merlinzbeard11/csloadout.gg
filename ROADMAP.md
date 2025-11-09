@@ -81,7 +81,7 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 ### Epic: Casual Player Features
 
 #### P0 - Must Ship
-- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **In Progress** (Phases 1-2 Complete ✅)
+- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **In Progress** (Phases 1-3 Complete ✅)
   - **Phase 1 Complete:** Database Foundation (2 days, 300 LOC)
     - CosmeticCategory model (10 categories)
     - WeaponUsagePriority model (10 weapons with budget weights)
@@ -94,6 +94,13 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
     - 30 tests passing (13 storage + 17 custom allocation)
     - Weapon charms support (NEW - Oct 2025)
     - Commits: 8323e1d (storage), df4d113 (custom allocation)
+  - **Phase 3 Complete:** Simple Budget Algorithm (1 day, 400 LOC)
+    - Budget distribution across categories (preset + custom modes)
+    - Weapon budget allocation within weapon_skins category
+    - Float value optimization guidance (budget vs quality)
+    - 23 tests passing (presets, custom, validation, performance)
+    - Floating-point precision handling with rounding error distribution
+    - Performance: <50ms execution, handles $10-$10,000 budgets
 
 #### P1 - Should Have
 - [ ] [09-price-alerts.md](./features/09-price-alerts.md) - Basic Price Alerts - **Not Started**
