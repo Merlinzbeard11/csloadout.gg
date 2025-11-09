@@ -53,11 +53,14 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 ### Epic: User Authentication & Personalization
 
 #### P0 - Must Ship
-- [x] [06-steam-authentication.md](./features/06-steam-authentication.md) - Steam OpenID Authentication - **Backend Complete** ✅ (UI Pending)
-  - Backend MVP: Custom Steam OpenID 2.0 provider, API routes, session management, security gotchas implemented
-  - Commits: 55cb562 (OpenID provider), 69176eb (API routes + session)
+- [x] [06-steam-authentication.md](./features/06-steam-authentication.md) - Steam OpenID Authentication - **Completed** ✅
+  - Custom Steam OpenID 2.0 provider with security gotchas implemented
+  - API routes: /api/auth/steam/login (initiate), /api/auth/steam/callback (verify)
+  - Session management: getSession(), requireAuth() with React cache() memoization
+  - UI: Sign-in page, error handling page with multiple error types
+  - Commits: 55cb562 (OpenID provider), 69176eb (API routes), 6298bf0 (UI complete)
   - Tests: 8/14 provider tests passing (core functionality verified)
-  - Pending: UI components (sign-in page, user nav, error page)
+  - BDD: 20 scenarios in features/06-steam-authentication.feature
 - [ ] [07-inventory-import.md](./features/07-inventory-import.md) - Basic Inventory Import - **Not Started**
 
 ### Epic: Casual Player Features
