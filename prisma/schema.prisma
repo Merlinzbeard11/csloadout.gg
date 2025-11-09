@@ -56,11 +56,46 @@ model Item {
   // Migration will add: NULLS DISTINCT clause
   @@unique([name, quality, wear])
 
-  // Indexes for performance
+  // Indexes for performance (Feature 01 & 02)
   @@index([search_name])
   @@index([type, rarity])
   @@index([weapon_type])
   @@index([collection_id]) // Fast collection → items queries
+
+  // Feature 03: Full-Text Search Indexes (created via raw SQL migration)
+  // Note: These are PostgreSQL-specific and not represented in Prisma schema
+  //
+  // - search_vector: tsvector column with GIN index (full-text search)
+  //   Auto-updated via trigger on INSERT/UPDATE
+  //   Indexes: name (weight A), weapon_type (B), description (C), search_name (D)
+  //
+  // - idx_items_name_trigram: GIN index for fuzzy autocomplete (pg_trgm)
+  //   Handles typos: "asimov" → "Asiimov"
+  //
+  // - idx_items_name_prefix: B-tree index for exact prefix matching
+  //   Fast path for <3 character queries: "ak" → "AK-47 | Redline"
+  //
+  // - idx_items_price: B-tree index on MIN(marketplace_prices.total_cost)
+  //   For price range filters: $5-$20
+  //
+  // - idx_items_rarity: B-tree index on rarity (WHERE rarity IS NOT NULL)
+  //   For rarity filters: "classified", "covert"
+  //
+  // - idx_items_wear: B-tree index on wear (WHERE wear != 'none')
+  //   For wear condition filters: "factory_new", "minimal_wear"
+  //
+  // - idx_items_float: B-tree index on (wear_min, wear_max)
+  //   For float value filters: 0.00-0.01
+  //
+  // - idx_items_search_combo: Composite index (weapon_type, rarity)
+  //   Optimizes common filter combinations: "AK-47 + classified"
+  //
+  // Performance Targets (BDD):
+  // - Basic search: <100ms (p95)
+  // - Filtered search: <300ms
+  // - Autocomplete: <50ms
+  //
+  // See: prisma/migrations/20251108_add_search_indexes/migration.sql
 }
 
 model Collection {
