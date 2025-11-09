@@ -144,6 +144,9 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
     price: Number(lwsk.item.marketplace_prices[0]?.total_cost || 0)
   }))
 
+  // Fetch items for current category with marketplace prices
+  const categoryItems = await fetchItemsForCategory(currentCategory, categoryBudgets[currentCategory])
+
   return (
     <main className="min-h-screen bg-gray-50 py-8" aria-label="Loadout detail page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -221,6 +224,8 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
               remainingBudget={categoryBudgets[currentCategory] - (categorySpent[currentCategory] || 0)}
               selectedItems={selectedItems.map(item => item.item_id)}
               onItemSelect={addItemToLoadoutAction}
+              items={categoryItems}
+              loadoutId={params.id}
             />
           </div>
 
@@ -256,6 +261,57 @@ function getCategoryFromWeaponType(weaponType: string): string {
   if (weaponType === 'Music Kit') return 'music_kit'
   if (weaponType === 'Charm') return 'charms'
   return 'weapon_skins'
+}
+
+/**
+ * Helper: Fetch items for category with marketplace prices
+ */
+async function fetchItemsForCategory(category: string, maxBudget: number) {
+  // Map category to Item filters
+  const where: any = {}
+
+  if (category === 'knife') {
+    where.weapon_type = 'Knife'
+  } else if (category === 'gloves') {
+    where.weapon_type = 'Gloves'
+  } else if (category === 'agents') {
+    where.weapon_type = { startsWith: 'Agent' }
+  } else if (category === 'music_kit') {
+    where.weapon_type = 'Music Kit'
+  } else if (category === 'charms') {
+    where.weapon_type = 'Charm'
+  } else if (category === 'weapon_skins') {
+    // Weapon skins: exclude special categories
+    where.weapon_type = {
+      notIn: ['Knife', 'Gloves', 'Music Kit', 'Charm'],
+      not: { startsWith: 'Agent' }
+    }
+  }
+
+  // Fetch items with marketplace prices
+  const items = await prisma.item.findMany({
+    where,
+    include: {
+      marketplace_prices: {
+        orderBy: { total_cost: 'asc' },
+        take: 3 // Get top 3 cheapest prices
+      }
+    },
+    orderBy: [
+      { rarity: 'desc' },
+      { name: 'asc' }
+    ],
+    take: 200 // Limit to 200 items per category for performance
+  })
+
+  // Filter items within budget (at least have one price <= maxBudget * 1.5)
+  // Allow 150% of budget to show near-budget options
+  const affordableItems = items.filter(item => {
+    const cheapestPrice = item.marketplace_prices[0]?.total_cost
+    return cheapestPrice && Number(cheapestPrice) <= maxBudget * 1.5
+  })
+
+  return affordableItems
 }
 
 /**

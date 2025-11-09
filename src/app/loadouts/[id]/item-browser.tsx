@@ -1,16 +1,34 @@
 'use client'
 
 /**
- * ItemBrowser Client Component (Full Implementation - Iteration 2)
+ * ItemBrowser Client Component (Full Implementation - Iteration 3)
  *
  * BDD: features/08-budget-loadout-builder-phase6.feature (Scenarios 60, 86, 125+)
  * Tests: __tests__/ItemBrowser.test.tsx
  *
  * Displays items from database in filterable, paginated grid.
- * NOTE: Currently displays mock data - API integration in iteration 3
+ * Items fetched in Server Component and passed as props.
  */
 
 import { useState } from 'react'
+
+interface MarketplacePrice {
+  id: string
+  platform: string
+  total_cost: number
+}
+
+interface Item {
+  id: string
+  name: string
+  display_name: string
+  weapon_type: string | null
+  wear: string | null
+  quality: string
+  rarity: string | null
+  image_url: string
+  marketplace_prices: MarketplacePrice[]
+}
 
 export interface ItemBrowserProps {
   category: string
@@ -18,41 +36,18 @@ export interface ItemBrowserProps {
   remainingBudget: number
   selectedItems: string[]
   onItemSelect: (loadoutId: string, itemId: string) => Promise<any>
+  items: Item[]
+  loadoutId: string
 }
-
-// Mock data for iteration 2 - API integration in iteration 3
-const MOCK_ITEMS = [
-  {
-    id: 'item-1',
-    name: 'AK-47 | Redline',
-    weapon_type: 'AK-47',
-    wear: 'field_tested',
-    quality: 'normal',
-    rarity: 'classified',
-    image_url: 'https://via.placeholder.com/150',
-    prices: [
-      { platform: 'CSFloat', price: 12.50 },
-      { platform: 'Steam', price: 14.20 }
-    ]
-  },
-  {
-    id: 'item-2',
-    name: 'AK-47 | Fire Serpent',
-    weapon_type: 'AK-47',
-    wear: 'minimal_wear',
-    quality: 'stattrak',
-    rarity: 'covert',
-    image_url: 'https://via.placeholder.com/150',
-    prices: [{ platform: 'CSFloat', price: 150.00 }]
-  }
-]
 
 export function ItemBrowser({
   category,
   categoryBudget,
   remainingBudget,
   selectedItems,
-  onItemSelect
+  onItemSelect,
+  items,
+  loadoutId
 }: ItemBrowserProps) {
   const [weaponFilter, setWeaponFilter] = useState<string>('all')
   const [wearFilter, setWearFilter] = useState<string>('all')
@@ -61,12 +56,17 @@ export function ItemBrowser({
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
+  // Get unique weapon types from items
+  const uniqueWeaponTypes = Array.from(
+    new Set(items.map(item => item.weapon_type).filter((wt): wt is string => wt !== null))
+  ).sort()
+
   // Filter items
-  const filteredItems = MOCK_ITEMS.filter(item => {
+  const filteredItems = items.filter(item => {
     if (weaponFilter !== 'all' && item.weapon_type !== weaponFilter) return false
     if (wearFilter !== 'all' && item.wear !== wearFilter) return false
     if (qualityFilter !== 'all' && item.quality !== qualityFilter) return false
-    if (searchQuery && !item.name.toLowerCase().includes(searchQuery.toLowerCase())) return false
+    if (searchQuery && !item.display_name.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
   })
 
@@ -114,9 +114,11 @@ export function ItemBrowser({
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">All Weapons</option>
-            <option value="AK-47">AK-47</option>
-            <option value="M4A4">M4A4</option>
-            <option value="AWP">AWP</option>
+            {uniqueWeaponTypes.map(weaponType => (
+              <option key={weaponType} value={weaponType}>
+                {weaponType}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -175,7 +177,9 @@ export function ItemBrowser({
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
           {paginatedItems.map((item) => {
-            const bestPrice = Math.min(...item.prices.map(p => p.price))
+            const bestPrice = item.marketplace_prices.length > 0
+              ? Math.min(...item.marketplace_prices.map(p => Number(p.total_cost)))
+              : 0
             const isOverBudget = bestPrice > remainingBudget
             const isSelected = selectedItems.includes(item.id)
 
@@ -189,22 +193,28 @@ export function ItemBrowser({
               >
                 <img
                   src={item.image_url}
-                  alt={item.name}
+                  alt={item.display_name}
                   className="w-full h-24 object-cover rounded mb-2"
                 />
-                <h3 className="text-sm font-medium text-gray-900 truncate">{item.name}</h3>
-                <p className="text-xs text-gray-500">{formatWear(item.wear)}</p>
+                <h3 className="text-sm font-medium text-gray-900 truncate">{item.display_name}</h3>
+                {item.wear && (
+                  <p className="text-xs text-gray-500">{formatWear(item.wear)}</p>
+                )}
                 {item.quality !== 'normal' && (
                   <p className="text-xs text-purple-600 font-medium">StatTrak™</p>
                 )}
-                <p className="text-sm font-bold text-green-600 mt-2">${bestPrice.toFixed(2)}</p>
+                {bestPrice > 0 ? (
+                  <p className="text-sm font-bold text-green-600 mt-2">${bestPrice.toFixed(2)}</p>
+                ) : (
+                  <p className="text-sm font-bold text-gray-400 mt-2">No price</p>
+                )}
 
                 <button
-                  onClick={() => onItemSelect('loadout-id', item.id)}
-                  disabled={isOverBudget || isSelected}
+                  onClick={() => onItemSelect(loadoutId, item.id)}
+                  disabled={isOverBudget || isSelected || bestPrice === 0}
                   className={`
                     w-full mt-2 px-3 py-1 text-xs font-medium rounded
-                    ${isOverBudget
+                    ${isOverBudget || bestPrice === 0
                       ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
                       : isSelected
                       ? 'bg-green-100 text-green-700'
@@ -212,7 +222,7 @@ export function ItemBrowser({
                     }
                   `}
                 >
-                  {isOverBudget ? 'Over Budget' : isSelected ? 'Selected' : 'Add to Loadout'}
+                  {bestPrice === 0 ? 'No Price' : isOverBudget ? 'Over Budget' : isSelected ? 'Selected' : 'Add to Loadout'}
                 </button>
               </div>
             )
