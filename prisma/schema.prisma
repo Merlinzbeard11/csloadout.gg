@@ -50,6 +50,9 @@ model Item {
   // Feature 07: Items can appear in multiple user inventories
   inventory_items InventoryItem[]
 
+  // Feature 08: Items can be used in loadouts
+  loadout_weapon_skins LoadoutWeaponSkin[]
+
   // Timestamps
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -295,6 +298,7 @@ model User {
   accounts  Account[]
   sessions  Session[]
   inventory UserInventory? // Feature 07: One-to-one inventory relationship
+  loadouts  Loadout[] // Feature 08: User-created loadouts
 
   // Timestamps
   created_at DateTime @default(now())
@@ -564,4 +568,115 @@ model WeaponUsagePriority {
   @@index([usage_percentage]) // Sort by popularity
 
   @@map("weapon_usage_priority")
+}
+
+// Feature 08: Budget Loadout Builder - Phase 2 (Loadout Storage)
+// User-created loadouts with weapon skins and cosmetics
+// BDD Reference: features/08-budget-loadout-builder-phase2.feature
+//
+// Critical Gotchas:
+// - Loadout stores COSMETIC selections (not in-game weapon loadout)
+// - Weapon charms support (NEW - Oct 2025)
+// - Float value optimization (0.15-0.18 FT, 0.07-0.09 MW for budget)
+// - Budget vs actual_cost tracking
+// - Slug generation for SEO
+model Loadout {
+  id String @id @default(uuid())
+
+  // Owner
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Basic information
+  name        String @db.VarChar(255)
+  description String? @db.Text
+  theme       String? @db.VarChar(50) // "red", "blue", "dragon", etc.
+
+  // Budget tracking
+  budget      Decimal @db.Decimal(10, 2) // User's budget limit
+  actual_cost Decimal @default(0) @db.Decimal(10, 2) // Sum of all items added
+
+  // Visibility
+  is_public Boolean @default(false) // Shareable publicly
+
+  // Social features
+  views   Int @default(0)
+  copies  Int @default(0) // Times copied by other users
+  upvotes Int @default(0)
+
+  // SEO
+  slug String? @unique @db.VarChar(255) // /loadouts/red-dragon-budget
+
+  // Creator attribution (for streamers/influencers)
+  creator_name String? @db.VarChar(255)
+  creator_link String? @db.Text
+
+  // Timestamps
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  published_at DateTime? // When made public
+
+  // Relationships
+  weapon_skins LoadoutWeaponSkin[]
+
+  // Indexes
+  @@index([user_id]) // Fast user → loadouts queries
+  @@index([slug]) // SEO-friendly URLs
+  @@index([theme]) // Filter by theme
+  @@index([is_public]) // Public loadout discovery
+  @@index([created_at]) // Sort by newest
+
+  @@map("loadouts")
+}
+
+// Weapon skins included in a loadout
+// Many-to-many: Loadout ↔ Item (with additional metadata per weapon)
+// BDD Reference: features/08-budget-loadout-builder-phase2.feature
+//
+// Critical Gotchas:
+// - ONE skin per weapon_type per loadout (UNIQUE constraint)
+// - Float value optimization for budget builds (0.15-0.18 FT preferred)
+// - Stickers stored as JSONB (up to 4 per weapon)
+// - Weapon charms stored as JSONB (NEW - Oct 2025)
+model LoadoutWeaponSkin {
+  id String @id @default(uuid())
+
+  // Foreign keys
+  loadout_id String
+  loadout    Loadout @relation(fields: [loadout_id], references: [id], onDelete: Cascade)
+
+  item_id String
+  item    Item   @relation(fields: [item_id], references: [id], onDelete: Restrict)
+
+  // Specific weapon type (AK-47, M4A4, M4A1-S, AWP, etc.)
+  weapon_type String @db.VarChar(50)
+
+  // Specific variant selection
+  wear        String? @db.VarChar(20) // "Factory New", "Minimal Wear", "Field-Tested", etc.
+  float_value Decimal? @db.Decimal(10, 8) // Actual float value (0.15-0.18 for FT, 0.07-0.09 for MW)
+  quality     String? @db.VarChar(20) // "StatTrak", "Souvenir", or NULL
+
+  // Pricing at time of selection
+  selected_platform String  @db.VarChar(50) // "csfloat", "steam", etc.
+  price             Decimal @db.Decimal(10, 2)
+
+  // Customizations on this weapon
+  // Gotcha: Use JSONB for flexible schema and query performance
+  stickers Json? // [{ name: "Natus Vincere (Holo)", position: 1 }, ...]
+  charms   Json? // NEW - weapon charms (Oct 2025)
+
+  // Alternative suggestions (similar items within budget)
+  alternatives Json? // [{ item_id, price, platform }, ...]
+
+  // Timestamps
+  created_at DateTime @default(now())
+
+  // Composite unique: ONE skin per weapon_type per loadout
+  @@unique([loadout_id, weapon_type])
+
+  // Indexes
+  @@index([loadout_id]) // Fast loadout → weapon skins queries
+  @@index([weapon_type]) // Filter by weapon
+
+  @@map("loadout_weapon_skins")
 }
