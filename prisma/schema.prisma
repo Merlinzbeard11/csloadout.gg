@@ -487,3 +487,81 @@ model InventoryItem {
   // See: prisma/migrations/20251109_add_inventory_tables/migration.sql
   // CREATE INDEX idx_inventory_items_stickers_gin ON inventory_items USING GIN (stickers);
 }
+
+// Feature 08: Budget Loadout Builder - Phase 1 (Database Foundation)
+// Cosmetic categories for budget allocation algorithm
+// BDD Reference: features/08-budget-loadout-builder-phase1.feature
+//
+// Critical Gotchas:
+// - Cosmetic loadout vs in-game weapon loadout (DIFFERENT SYSTEMS)
+// - Weapon charms added Oct 2025 (NEW category - mark with release_date)
+// - Categories are cosmetic types, NOT weapon selection slots
+// - 10 categories: weapon_skins, agent_ct, agent_t, knife, gloves, music_kit, stickers, patches, charms, graffiti
+model CosmeticCategory {
+  id String @id // PK: "weapon_skins", "agent_ct", "knife", "gloves", etc.
+
+  // Display information
+  name         String @db.VarChar(100) // User-facing name: "Weapon Skins", "Knife", "Gloves"
+  category_type String @db.VarChar(50) // "weapon", "agent", "equipment", "customization"
+
+  // Ordering and UI
+  sort_order Int // Display order (weapon_skins=1, agent_ct=2, agent_t=3, etc.)
+  icon_url   String? @db.Text // Icon URL for UI
+  description String? @db.Text // Description with gotcha notes (e.g., "NEW" for charms)
+
+  // Budget allocation
+  is_required Boolean @default(false) // Required cosmetics (weapon_skins only)
+
+  // Versioning (track when category was added to CS2)
+  // BDD: "Weapon charms are marked as new"
+  release_date DateTime? @db.Date // When category was added (charms: 2025-10-01)
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([category_type]) // Filter by type (weapon, agent, etc.)
+  @@index([sort_order]) // Ordered display
+
+  @@map("cosmetic_categories")
+}
+
+// Weapon usage priorities for budget allocation algorithm
+// BDD Reference: features/08-budget-loadout-builder-phase1.feature
+//
+// Critical Gotcha: Budget weights MUST sum to exactly 1.00 (100%)
+// - AK-47: 25% (highest usage)
+// - M4A4: 15%
+// - M4A1-S: 15%
+// - AWP: 20%
+// - Desert Eagle: 10%
+// - USP-S: 5%
+// - Glock-18: 3%
+// - P250: 2%
+// - CZ75-Auto: 2%
+// - Tec-9: 2%
+// - Other pistols: 1%
+model WeaponUsagePriority {
+  weapon_type String @id @db.VarChar(50) // PK: "AK-47", "M4A4", "M4A1-S", "AWP", etc.
+
+  // Usage statistics
+  usage_percentage Decimal @db.Decimal(5, 2) // % of players who use this weapon (95.00 for AK-47)
+
+  // Budget allocation weight
+  // BDD: "Weapon priorities sum to 100% budget allocation"
+  budget_weight Decimal @db.Decimal(5, 2) // Suggested budget allocation (0.25 for AK-47 = 25%)
+
+  // Priority classification
+  is_essential Boolean @default(false) // Essential weapons (AK-47, M4A4, M4A1-S, AWP)
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([is_essential]) // Filter essential weapons
+  @@index([usage_percentage]) // Sort by popularity
+
+  @@map("weapon_usage_priority")
+}
