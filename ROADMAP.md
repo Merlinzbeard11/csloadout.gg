@@ -1,6 +1,6 @@
 # csloadout.gg Development Roadmap
 
-> Last Updated: November 2, 2025
+> Last Updated: November 9, 2025
 
 ## Overview
 
@@ -14,7 +14,7 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 
 | Phase | Timeline | Status | Progress | Target Users | Target MRR |
 |-------|----------|--------|----------|--------------|------------|
-| Phase 1 | 3-4 months | **In Progress** 🟡 | **50%** (5/10 P0) | 10K | $500 |
+| Phase 1 | 3-4 months | **In Progress** 🟡 | **59%** (5.9/10 P0) | 10K | $500 |
 | Phase 2 | 6-8 months | Not Started | 0% | 50K | $15K |
 | Phase 3 | 6-8 months | Not Started | 0% | 100K | $30K |
 | Phase 4 | 12+ months | Not Started | 0% | 500K | $100K+ |
@@ -61,7 +61,18 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
   - Commits: 55cb562 (OpenID provider), 69176eb (API routes), 6298bf0 (UI complete)
   - Tests: 8/14 provider tests passing (core functionality verified)
   - BDD: 20 scenarios in features/06-steam-authentication.feature
-- [ ] [07-inventory-import.md](./features/07-inventory-import.md) - Basic Inventory Import - **Not Started**
+- [x] [07-inventory-import.md](./features/07-inventory-import.md) - Basic Inventory Import - **Backend Complete** 🟡 (90% Complete)
+  - **BDD:** 33 scenarios in features/07-inventory-import.feature
+  - **Database:** UserInventory + InventoryItem models with GDPR compliance (90-day retention, consent tracking)
+  - **Steam API Client:** HTTP client with exponential backoff + jitter, pagination support, 16/16 tests passing ✅
+  - **Sync Service:** Prisma interactive transactions, item matching via market_hash_name, cache (6hr TTL) ✅
+  - **API Routes:** GET /api/inventory, POST /api/inventory/sync, DELETE /api/inventory (GDPR) ✅
+  - **UI Tests:** 47 test scenarios written (TDD RED) - InventoryImportButton, PrivacyConsentModal, InventoryValueDisplay
+  - **Remaining:** UI component implementation (TDD GREEN phase)
+  - **Commits:** 6c87279 (remove Memento refs), ff4fc09 (sync service), dcf4c59 (API tests), 34bf14f (API routes), a4bf94c (UI tests)
+  - **Tests:** 88 total (16 Steam + 11 Sync Service + 14 API + 47 UI)
+  - **Gotchas Captured:** 5 (Steam endpoint changes, Prisma transactions, HTTP retry, Next.js auth, RSC testing)
+  - **Learnings Captured:** 3 (Prisma patterns, Next.js auth, full-stack TDD)
 
 ### Epic: Casual Player Features
 
