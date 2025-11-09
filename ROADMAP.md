@@ -81,7 +81,12 @@ This roadmap outlines the phased development approach for csloadout.gg - a CS2 s
 ### Epic: Casual Player Features
 
 #### P0 - Must Ship
-- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **Not Started**
+- [ ] [08-budget-loadout-builder.md](./features/08-budget-loadout-builder.md) - Budget Loadout Builder - **In Progress** (Phase 1: Database Foundation ✅)
+  - **Phase 1 Complete:** Database Foundation (2 days)
+    - CosmeticCategory model (10 categories)
+    - WeaponUsagePriority model (10 weapons with budget weights)
+    - 23 tests passing (BDD scenarios validated)
+    - Commit: 1f8ee61 (Feature 08 Phase 1 complete)
 
 #### P1 - Should Have
 - [ ] [09-price-alerts.md](./features/09-price-alerts.md) - Basic Price Alerts - **Not Started**
