@@ -106,12 +106,12 @@ describe('PriceComparisonTable Component', () => {
       expect(screen.getByText('$10.00')).toBeInTheDocument();
     });
 
-    it('should display fee percentage', () => {
+    it('should display fee badges with FeeBreakdown component', () => {
       render(<PriceComparisonTable prices={mockPrices} />);
 
-      expect(screen.getByText('2.0%')).toBeInTheDocument();
-      expect(screen.getByText('2.5%')).toBeInTheDocument();
-      expect(screen.getByText('15.0%')).toBeInTheDocument();
+      // All platforms have 0% buyer fees (seller pays), so all show "Low Fees: 0%"
+      const feeBadges = screen.getAllByText(/Low Fees: 0%/i);
+      expect(feeBadges.length).toBeGreaterThanOrEqual(3); // CSFloat, Buff163, Steam
     });
 
     it('should display total cost with $ symbol', () => {

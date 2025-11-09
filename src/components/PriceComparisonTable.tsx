@@ -21,6 +21,8 @@
 import React from 'react';
 import type { AggregatedPrices } from '../types/price';
 import { PLATFORM_NAMES } from '../types/price';
+import FeeBreakdown from './FeeBreakdown';
+import { transformPriceDataToFeeBreakdown } from '../lib/price-to-fee-breakdown';
 
 export interface PriceComparisonTableProps {
   prices: AggregatedPrices;
@@ -128,9 +130,9 @@ export default function PriceComparisonTable({ prices }: PriceComparisonTablePro
                     ${priceData.price.toFixed(2)}
                   </td>
 
-                  {/* Fees */}
+                  {/* Fees - FeeBreakdown Component */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {priceData.fees.total.toFixed(1)}%
+                    <FeeBreakdown breakdown={transformPriceDataToFeeBreakdown(priceData)} />
                   </td>
 
                   {/* Total Cost */}
