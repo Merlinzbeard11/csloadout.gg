@@ -30,6 +30,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { emailService } from '@/lib/email/email-service'
 
 const COOLDOWN_MINUTES = 15
 
@@ -110,7 +111,7 @@ export async function GET(request: NextRequest) {
 
         // Create AlertTrigger record for history tracking
         // BDD Scenario: "View alert trigger history" (line 266)
-        await prisma.alertTrigger.create({
+        const trigger = await prisma.alertTrigger.create({
           data: {
             alert_id: alert.id,
             triggered_price: currentPrice,
@@ -128,7 +129,33 @@ export async function GET(request: NextRequest) {
           user_email: alert.user.email
         })
 
-        // TODO Phase 1e: Send email notification if notify_email = true
+        // Phase 1e: Send email notification if notify_email = true
+        // BDD Scenario: "Send email notification when alert triggers" (line 143)
+        if (alert.notify_email && alert.user.email) {
+          const emailResult = await emailService.sendPriceAlertEmail({
+            to: alert.user.email,
+            itemName: alert.item.display_name,
+            targetPrice: targetPrice,
+            triggeredPrice: currentPrice,
+            platform: lowestPrice.platform,
+            listingUrl: lowestPrice.listing_url || '',
+            alertId: alert.id
+          })
+
+          // Update trigger record with email status
+          if (emailResult.success) {
+            await prisma.alertTrigger.update({
+              where: { id: trigger.id },
+              data: {
+                email_sent: true,
+                email_sent_at: new Date()
+              }
+            })
+          } else {
+            console.error(`Failed to send email for alert ${alert.id}:`, emailResult.error)
+          }
+        }
+
         // TODO Phase 1f: Send push notification if notify_push = true
       } catch (error) {
         console.error(`Failed to trigger alert ${alert.id}:`, error)
