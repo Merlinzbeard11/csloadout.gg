@@ -1,23 +1,25 @@
 /**
  * Loadout Detail Page (Server Component)
  *
- * BDD: features/08-budget-loadout-builder-phase6.feature
- * Tests: __tests__/loadout-detail-page.test.tsx
+ * BDD Phase 6: features/08-budget-loadout-builder-phase6.feature
+ * BDD Phase 7b: features/08-budget-loadout-builder-phase7.feature (lines 62-100)
+ * Tests: __tests__/loadout-detail-page.test.tsx, __tests__/public-viewing.test.tsx
  *
  * Responsibilities:
- * - Fetch loadout by ID from database
+ * - Support BOTH UUID and slug routing
+ * - Fetch loadout by ID (UUID) OR slug (public only)
+ * - Optional authentication (public loadouts viewable by anyone)
  * - Fetch selected items (LoadoutWeaponSkin with Item + Prices)
  * - Calculate budget summary (total, spent, remaining)
  * - Calculate category budgets from custom_allocation
  * - Render client components (ItemBrowser, BudgetTracker, SelectedItemsList)
- * - Require authentication
- * - Handle authorization (user must own loadout)
- * - Handle 404 (loadout not found)
+ * - Show edit controls for owner, read-only for others
+ * - Handle 404 (loadout not found or private accessed by slug)
  */
 
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { requireAuth } from '@/lib/auth/session'
+import { getSession } from '@/lib/auth/session'
 import { prisma } from '@/lib/prisma'
 import { ItemBrowser } from './item-browser'
 import { BudgetTracker } from './budget-tracker'
@@ -30,9 +32,14 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const loadout = await prisma.loadout.findUnique({
-    where: { id: params.id },
-    select: { name: true }
+  // Detect UUID vs slug
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id)
+
+  const loadout = await prisma.loadout.findFirst({
+    where: isUUID
+      ? { id: params.id }
+      : { slug: params.id, is_public: true },
+    select: { name: true, is_public: true, slug: true }
   })
 
   if (!loadout) {
@@ -44,17 +51,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return {
     title: `${loadout.name} - CSLoadout.gg`,
     description: `View and customize your CS2 loadout: ${loadout.name}`,
-    robots: 'noindex, nofollow' // User-specific page
+    robots: loadout.is_public ? 'index, follow' : 'noindex, nofollow'
   }
 }
 
 export default async function LoadoutDetailPage({ params, searchParams }: PageProps) {
-  // Require authentication
-  const session = await requireAuth()
+  // Optional authentication (public loadouts don't require auth)
+  const session = await getSession()
+
+  // Detect UUID vs slug
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id)
 
   // Fetch loadout with selected items
-  const loadout = await prisma.loadout.findUnique({
-    where: { id: params.id },
+  const loadout = await prisma.loadout.findFirst({
+    where: isUUID
+      ? { id: params.id }
+      : { slug: params.id, is_public: true }, // Slug access requires is_public
     include: {
       weapon_skins: {
         include: {
@@ -72,13 +84,16 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
     }
   })
 
-  // Handle 404
+  // Handle 404 (loadout not found or private accessed by slug)
   if (!loadout) {
     notFound()
   }
 
-  // Handle authorization (user must own loadout)
-  if (loadout.user_id !== session.user.id) {
+  // Determine if user is owner
+  const isOwner = session?.user?.id === loadout.user_id
+
+  // Authorization for private loadouts accessed by UUID
+  if (!loadout.is_public && !isOwner) {
     return (
       <main className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -152,7 +167,14 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">{loadout.name}</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-gray-900">{loadout.name}</h1>
+            {!isOwner && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
+                View Only
+              </span>
+            )}
+          </div>
           {loadout.description && (
             <p className="mt-2 text-gray-600">{loadout.description}</p>
           )}
@@ -216,21 +238,23 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Item Browser (2/3 width) */}
-          <div className="lg:col-span-2">
-            <ItemBrowser
-              category={currentCategory}
-              categoryBudget={categoryBudgets[currentCategory]}
-              remainingBudget={categoryBudgets[currentCategory] - (categorySpent[currentCategory] || 0)}
-              selectedItems={selectedItems.map(item => item.item_id)}
-              onItemSelect={addItemToLoadoutAction}
-              items={categoryItems}
-              loadoutId={params.id}
-            />
-          </div>
+          {/* Item Browser (2/3 width) - Owner only */}
+          {isOwner && (
+            <div className="lg:col-span-2">
+              <ItemBrowser
+                category={currentCategory}
+                categoryBudget={categoryBudgets[currentCategory]}
+                remainingBudget={categoryBudgets[currentCategory] - (categorySpent[currentCategory] || 0)}
+                selectedItems={selectedItems.map(item => item.item_id)}
+                onItemSelect={addItemToLoadoutAction}
+                items={categoryItems}
+                loadoutId={params.id}
+              />
+            </div>
+          )}
 
-          {/* Sidebar (1/3 width) */}
-          <div className="space-y-6">
+          {/* Sidebar (full width for non-owners, 1/3 for owners) */}
+          <div className={isOwner ? 'space-y-6' : 'lg:col-span-3 space-y-6'}>
             {/* Budget Tracker */}
             <BudgetTracker
               totalBudget={totalBudget}
@@ -241,8 +265,8 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
             {/* Selected Items List */}
             <SelectedItemsList
               selectedItems={selectedItems}
-              onRemove={removeItemFromLoadoutAction}
-              onChange={replaceItemAction}
+              onRemove={isOwner ? removeItemFromLoadoutAction : async () => {}}
+              onChange={isOwner ? replaceItemAction : async () => {}}
             />
           </div>
         </div>
