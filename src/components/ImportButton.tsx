@@ -13,7 +13,7 @@
  * - Refresh page on successful import
  */
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { startInventoryImport, type ImportResult, type ImportProgress } from '@/actions/inventory'
 
@@ -26,7 +26,44 @@ export default function ImportButton({ className }: ImportButtonProps) {
   const [message, setMessage] = useState<string>('')
   const [itemsImported, setItemsImported] = useState<number>(0)
   const [progress, setProgress] = useState<ImportProgress | null>(null)
+  const [remainingTime, setRemainingTime] = useState<number>(0)
   const router = useRouter()
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [])
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (remainingTime > 0) {
+      timerRef.current = setInterval(() => {
+        setRemainingTime((prev) => {
+          if (prev <= 1) {
+            if (timerRef.current) {
+              clearInterval(timerRef.current)
+            }
+            // Reset to idle state when countdown completes
+            setStatus('idle')
+            setMessage('')
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current)
+        }
+      }
+    }
+  }, [remainingTime])
 
   const handleImport = async () => {
     setStatus('importing')
@@ -59,6 +96,11 @@ export default function ImportButton({ className }: ImportButtonProps) {
         } else {
           setStatus('error')
           setMessage(result.message)
+
+          // Handle rate limit with countdown
+          if (result.retryAfter) {
+            setRemainingTime(result.retryAfter)
+          }
         }
       } catch (error) {
         console.error('Import error:', error)
@@ -74,6 +116,7 @@ export default function ImportButton({ className }: ImportButtonProps) {
   const isImporting = status === 'importing'
   const isComplete = status === 'complete'
   const isError = status === 'error'
+  const isRateLimited = remainingTime > 0
 
   // Calculate progress percentage
   const progressPercentage = progress && progress.total
@@ -83,15 +126,36 @@ export default function ImportButton({ className }: ImportButtonProps) {
   // Format numbers with commas
   const formatNumber = (num: number) => num.toLocaleString('en-US')
 
+  // Format countdown time
+  const formatCountdown = (seconds: number): string => {
+    if (seconds >= 60) {
+      const minutes = Math.floor(seconds / 60)
+      const remainingSeconds = seconds % 60
+      if (remainingSeconds > 0) {
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ${remainingSeconds} seconds`
+      }
+      return `${minutes} minute${minutes > 1 ? 's' : ''}`
+    }
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`
+  }
+
   return (
     <div className="space-y-4">
       <button
         onClick={handleImport}
-        disabled={isImporting}
+        disabled={isImporting || isRateLimited}
         className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed ${className || ''}`}
       >
         Import Steam Inventory
       </button>
+
+      {/* Rate Limit Countdown */}
+      {isRateLimited && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-yellow-900 font-semibold">Rate limit reached</p>
+          <p className="text-yellow-700 text-sm mt-1">Retry in {formatCountdown(remainingTime)}</p>
+        </div>
+      )}
 
       {/* Progress Indicator */}
       {isImporting && (
@@ -143,8 +207,8 @@ export default function ImportButton({ className }: ImportButtonProps) {
         </div>
       )}
 
-      {/* Error Message */}
-      {isError && (
+      {/* Error Message (only show if not rate limited - rate limit has its own UI) */}
+      {isError && !isRateLimited && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-900 font-semibold">Import Failed</p>
           <p className="text-red-700 text-sm mt-1">{message}</p>

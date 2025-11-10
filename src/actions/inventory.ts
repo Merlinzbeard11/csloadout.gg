@@ -34,6 +34,7 @@ export interface ImportResult {
   status: 'importing' | 'complete' | 'error'
   itemsImported?: number
   progress?: ImportProgress
+  retryAfter?: number // Seconds to wait before retrying (for rate limit errors)
 }
 
 /**
