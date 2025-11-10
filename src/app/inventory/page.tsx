@@ -2,6 +2,7 @@ import React from 'react'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth/session'
+import InventoryPrivacyWrapper from '@/components/InventoryPrivacyWrapper'
 
 /**
  * Inventory Dashboard Page - Server Component
@@ -108,28 +109,11 @@ export default async function InventoryPage() {
     )
   }
 
-  // Handle error states
-  if (inventory.sync_status === 'private') {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-red-900 mb-2">
-              Inventory is Private
-            </h2>
-            <p className="text-red-700 mb-4">
-              {inventory.error_message || 'Your Steam inventory is set to private. Please make it public to import.'}
-            </p>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-              Open Steam Privacy Settings
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Check if inventory is private (will trigger modal via wrapper)
+  const isPrivate = inventory?.sync_status === 'private'
 
-  if (inventory.sync_status === 'rate_limited') {
+  // Handle rate limit error state
+  if (inventory && inventory.sync_status === 'rate_limited') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
@@ -148,10 +132,11 @@ export default async function InventoryPage() {
 
   // Display imported inventory
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">My Inventory</h1>
+    <InventoryPrivacyWrapper isPrivate={isPrivate}>
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold text-gray-900">My Inventory</h1>
 
           {isStale && (
             <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
@@ -296,5 +281,6 @@ export default async function InventoryPage() {
         )}
       </div>
     </div>
+    </InventoryPrivacyWrapper>
   )
 }
