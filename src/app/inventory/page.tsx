@@ -42,6 +42,33 @@ export default async function InventoryPage() {
     }
   })
 
+  // Calculate total savings (best platform vs Steam)
+  let totalSteamPrice = 0
+  let potentialSavings = 0
+  let savingsPercentage = 0
+
+  if (inventory && inventory.items.length > 0) {
+    // Get all item IDs
+    const itemIds = inventory.items.map(invItem => invItem.item_id)
+
+    // Fetch Steam prices for all items
+    const steamPrices = await prisma.marketplacePrice.findMany({
+      where: {
+        item_id: { in: itemIds },
+        platform: 'steam'
+      }
+    })
+
+    // Sum up Steam prices
+    totalSteamPrice = steamPrices.reduce((sum, price) => sum + Number(price.price), 0)
+
+    // Calculate savings: total_value (best platform) - steam total
+    potentialSavings = Number(inventory.total_value) - totalSteamPrice
+
+    // Calculate percentage: (savings / steam_total) * 100
+    savingsPercentage = totalSteamPrice > 0 ? (potentialSavings / totalSteamPrice) * 100 : 0
+  }
+
   // Calculate cache staleness (6 hour TTL)
   const CACHE_TTL_HOURS = 6
   let isStale = false
@@ -149,7 +176,7 @@ export default async function InventoryPage() {
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <p className="text-sm text-gray-600 mb-1">Total Items</p>
             <p className="text-3xl font-bold text-gray-900">{inventory.total_items} items</p>
@@ -161,10 +188,18 @@ export default async function InventoryPage() {
               ${Number(inventory.total_value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
+
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <p className="text-sm text-gray-600 mb-1">Last Synced</p>
-            <p className="text-lg font-semibold text-gray-900">
-              {formatLastSynced(inventory.last_synced)}
+            <p className="text-sm text-gray-600 mb-1">Potential Savings</p>
+            <p className="text-3xl font-bold text-green-600">
+              ${potentialSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <p className="text-sm text-gray-600 mb-1">vs Steam Market</p>
+            <p className="text-3xl font-bold text-green-600">
+              +{savingsPercentage.toFixed(1)}%
             </p>
           </div>
         </div>

@@ -22,6 +22,15 @@ import { render, screen } from '@testing-library/react'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth/session'
 
+// Mock next/navigation
+jest.mock('next/navigation', () => ({
+  redirect: jest.fn(),
+  useRouter: () => ({
+    refresh: jest.fn(),
+    push: jest.fn()
+  })
+}))
+
 // Component will be imported once implemented
 // import InventoryPage from '@/app/inventory/page'
 
