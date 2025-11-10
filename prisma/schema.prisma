@@ -53,6 +53,9 @@ model Item {
   // Feature 08: Items can be used in loadouts
   loadout_weapon_skins LoadoutWeaponSkin[]
 
+  // Feature 09: Items can have price alerts
+  price_alerts PriceAlert[] @relation("item_price_alerts")
+
   // Timestamps
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
@@ -294,12 +297,19 @@ model User {
   last_logoff DateTime? // Last time user was online (Unix timestamp from API)
   last_login  DateTime  @default(now()) // Last authentication timestamp
 
+  // Feature 09: Email and notification preferences
+  email                      String? @unique // User email for notifications
+  notification_email_enabled Boolean @default(true) // Email notification preference
+  notification_push_enabled  Boolean @default(true) // Push notification preference
+
   // Relationships
   accounts  Account[]
   sessions  Session[]
   inventory UserInventory? // Feature 07: One-to-one inventory relationship
   loadouts  Loadout[] // Feature 08: User-created loadouts
   loadout_upvotes LoadoutUpvote[] // Phase 7d: Loadouts upvoted by user
+  price_alerts PriceAlert[] @relation("user_price_alerts") // Feature 09: Price alerts
+  push_subscriptions PushSubscription[] @relation("user_push_subscriptions") // Feature 09: Push notifications
 
   // Timestamps
   created_at DateTime @default(now())
@@ -750,4 +760,164 @@ model LoadoutWeaponSkin {
   @@index([weapon_type]) // Filter by weapon
 
   @@map("loadout_weapon_skins")
+}
+
+// Feature 09: Price Alerts - Phase 1
+// User price alerts for items with email/push notifications
+// BDD Reference: features/09-price-alerts-phase1.feature
+//
+// Critical Gotchas:
+// - SendGrid shared IP reputation degradation (40%+ spam risk)
+// - VAPID keys REQUIRED for push notifications (not actually voluntary)
+// - Push subscriptions expire after 24+ hours (30-50% stale after 90 days)
+// - Horizontal scaling duplicate execution (use distributed locks)
+// - GDPR 30-day unsubscribe requirement (€20M fine risk)
+// - N+1 query problem with alert checking (use eager loading)
+// - BRIN index for time-series price data (99% storage savings)
+model PriceAlert {
+  id String @id @default(uuid())
+
+  // Owner
+  user_id String
+  user    User   @relation("user_price_alerts", fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Target item
+  item_id String
+  item    Item   @relation("item_price_alerts", fields: [item_id], references: [id], onDelete: Cascade)
+
+  // Alert conditions
+  target_price Decimal @db.Decimal(10, 2) // User's target price
+  platform     String? @db.VarChar(50) // NULL = any platform, or specific: "csfloat", "steam", etc.
+  wear         String? @db.VarChar(20) // NULL = any wear
+  quality      String? @db.VarChar(20) // NULL = any quality
+
+  // Notification preferences
+  notify_email Boolean @default(true)
+  notify_push  Boolean @default(true)
+  notify_sms   Boolean @default(false) // Future: SMS notifications (Phase 2)
+
+  // Alert status
+  is_active         Boolean   @default(true)
+  triggered_count   Int       @default(0)
+  last_triggered_at DateTime?
+  expires_at        DateTime? // Optional expiration (90 days auto-cleanup)
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relationships
+  triggers AlertTrigger[]
+
+  // CHECK constraint: target_price must be positive
+  // Note: Prisma doesn't natively support CHECK constraints, created in migration
+
+  // Indexes
+  @@index([user_id]) // Fast user → alerts queries
+  @@index([item_id]) // Fast item → alerts queries
+  @@index([is_active]) // Filter active alerts for background job
+  @@index([last_triggered_at]) // Cooldown period checks
+
+  @@map("price_alerts")
+}
+
+// Feature 09: Alert Trigger History
+// Records each time a price alert triggers with notification status
+// BDD Reference: features/09-price-alerts-phase1.feature (Phase 1i)
+//
+// Critical Gotchas:
+// - 15-minute cooldown between triggers for same alert
+// - Track email/push delivery status separately
+// - Click tracking for conversion metrics
+model AlertTrigger {
+  id String @id @default(uuid())
+
+  // Foreign key
+  alert_id String
+  alert    PriceAlert @relation(fields: [alert_id], references: [id], onDelete: Cascade)
+
+  // Trigger details
+  triggered_at    DateTime @default(now())
+  triggered_price Decimal  @db.Decimal(10, 2)
+  platform        String   @db.VarChar(50)
+  listing_url     String?  @db.Text
+
+  // Notification status
+  email_sent    Boolean   @default(false)
+  email_sent_at DateTime?
+  push_sent     Boolean   @default(false)
+  push_sent_at  DateTime?
+
+  // User interaction tracking
+  clicked      Boolean   @default(false)
+  clicked_at   DateTime?
+  purchased    Boolean   @default(false) // User-reported or tracked via affiliate
+  purchased_at DateTime?
+
+  // Indexes
+  @@index([alert_id]) // Fast alert → triggers queries
+  @@index([triggered_at]) // Time-series queries (use BRIN for performance)
+
+  @@map("alert_triggers")
+}
+
+// Feature 09: Email Suppression List (GDPR Compliance)
+// Prevents sending emails to users who unsubscribed
+// BDD Reference: features/09-price-alerts-phase1.feature (Phase 1e)
+//
+// Critical Gotcha:
+// - MUST check this list BEFORE every email send (no exceptions)
+// - Unsubscribe must be processed within 72 hours (GDPR best practice)
+// - €20M fine risk for violations
+model EmailSuppressionList {
+  id String @id @default(uuid())
+
+  // Email to suppress
+  email String @unique @db.VarChar(255)
+
+  // Reason for suppression
+  reason String @db.VarChar(50) // "user_unsubscribed", "bounce", "spam_complaint"
+
+  // Timestamp
+  suppressed_at DateTime @default(now())
+
+  // Indexes
+  @@index([email]) // Fast lookup before email send
+
+  @@map("email_suppression_list")
+}
+
+// Feature 09: Push Subscription Storage
+// Stores browser push notification subscriptions
+// BDD Reference: features/09-price-alerts-phase1.feature (Phase 1f)
+//
+// Critical Gotchas:
+// - VAPID keys REQUIRED (Chrome/Safari mandate it despite "voluntary" name)
+// - Subscriptions expire silently (410/404 errors after 24+ hours)
+// - Handle expiration gracefully: delete on 410, don't crash
+model PushSubscription {
+  id String @id @default(uuid())
+
+  // Owner
+  user_id String
+  user    User   @relation("user_push_subscriptions", fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Push subscription details
+  endpoint    String @unique @db.Text // FCM/APNs endpoint URL
+  p256dh_key  String @db.Text // Encryption key
+  auth_key    String @db.Text // Authentication secret
+
+  // Metadata
+  user_agent String? @db.Text // Browser info for debugging
+
+  // Timestamps
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Indexes
+  @@index([user_id]) // Fast user → subscriptions queries
+  @@index([endpoint]) // Fast endpoint lookup for 410 error cleanup
+  @@index([created_at]) // Age-based cleanup (remove >90 days old)
+
+  @@map("push_subscriptions")
 }
