@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth/session'
 import InventoryPrivacyWrapper from '@/components/InventoryPrivacyWrapper'
 import ImportButton from '@/components/ImportButton'
 import RefreshButton from '@/components/RefreshButton'
+import BackgroundRefreshTrigger from '@/components/BackgroundRefreshTrigger'
 
 /**
  * Inventory Dashboard Page - Server Component
@@ -158,6 +159,7 @@ export default async function InventoryPage() {
   // Display imported inventory
   return (
     <InventoryPrivacyWrapper isPrivate={isPrivate}>
+      <BackgroundRefreshTrigger isStale={isStale} />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-6">
