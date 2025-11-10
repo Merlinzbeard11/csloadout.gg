@@ -23,6 +23,12 @@ export interface RetryImportResult {
   syncStatus?: string
 }
 
+export interface RefreshResult {
+  success: boolean
+  message: string
+  lastSynced?: Date
+}
+
 export interface ImportProgress {
   current: number
   total: number | null
@@ -199,6 +205,65 @@ export async function retryInventoryImport(): Promise<RetryImportResult> {
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Failed to retry import'
+    }
+  }
+}
+
+/**
+ * Refresh inventory data and invalidate cache
+ *
+ * Called from RefreshButton component when user manually triggers refresh
+ * Updates last_synced timestamp and invalidates Next.js cache
+ */
+export async function refreshInventoryData(): Promise<RefreshResult> {
+  try {
+    // Verify user session
+    const session = await getSession()
+
+    if (!session || !session.user) {
+      return {
+        success: false,
+        message: 'Authentication required'
+      }
+    }
+
+    const userId = session.user.id
+
+    // Fetch current inventory
+    const inventory = await prisma.userInventory.findUnique({
+      where: { user_id: userId }
+    })
+
+    if (!inventory) {
+      return {
+        success: false,
+        message: 'No inventory found. Please import first.'
+      }
+    }
+
+    // Update last_synced timestamp to current time
+    const updatedInventory = await prisma.userInventory.update({
+      where: { user_id: userId },
+      data: {
+        last_synced: new Date()
+      }
+    })
+
+    // Invalidate Next.js cache for inventory page
+    revalidatePath('/inventory')
+
+    return {
+      success: true,
+      message: 'Inventory refreshed successfully',
+      lastSynced: updatedInventory.last_synced
+    }
+
+  } catch (error) {
+    console.error('Refresh inventory error:', error)
+
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to refresh inventory'
     }
   }
 }
