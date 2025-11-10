@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth/session'
 import InventoryPrivacyWrapper from '@/components/InventoryPrivacyWrapper'
+import ImportButton from '@/components/ImportButton'
 
 /**
  * Inventory Dashboard Page - Server Component
@@ -121,11 +122,7 @@ export default async function InventoryPage() {
               Compare prices from Steam, CSFloat, Buff163, and more.
             </p>
 
-            <button
-              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Import Steam Inventory
-            </button>
+            <ImportButton />
 
             <p className="text-xs text-gray-500 mt-4">
               We'll fetch your public Steam inventory and calculate total value
