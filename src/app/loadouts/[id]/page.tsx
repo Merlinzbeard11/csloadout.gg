@@ -27,6 +27,7 @@ import { SelectedItemsList } from './selected-items-list'
 import { UpvoteButton } from './upvote-button'
 import { addItemToLoadoutAction, removeItemFromLoadoutAction, replaceItemAction } from './actions'
 import { checkUserUpvotedAction } from './upvote-actions'
+import { trackLoadoutViewAction } from './view-tracking-actions'
 
 interface PageProps {
   params: { id: string }
@@ -169,6 +170,15 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
     ? await checkUserUpvotedAction(loadout.id, session.user.id)
     : false
 
+  // Track view for public loadouts (Phase 7e)
+  // Non-blocking: track view in background, don't wait for result
+  if (loadout.is_public) {
+    // Fire and forget - don't await to avoid blocking page render
+    trackLoadoutViewAction(loadout.id).catch(err => {
+      console.error('Failed to track view:', err)
+    })
+  }
+
   return (
     <main className="min-h-screen bg-gray-50 py-8" aria-label="Loadout detail page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -186,9 +196,10 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
             <p className="mt-2 text-gray-600">{loadout.description}</p>
           )}
 
-          {/* Upvote Button - Phase 7d */}
+          {/* Stats Row - Phase 7d & 7e */}
           {loadout.is_public && (
-            <div className="mt-4">
+            <div className="mt-4 flex items-center gap-4">
+              {/* Upvote Button */}
               <UpvoteButton
                 loadoutId={loadout.id}
                 userId={session?.user?.id || null}
@@ -196,6 +207,16 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
                 initialUpvoted={userUpvoted}
                 initialCount={loadout.upvotes}
               />
+
+              {/* View Count - Phase 7e */}
+              <div className="flex items-center gap-2 text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span className="font-medium">{loadout.views.toLocaleString()}</span>
+                <span className="text-sm">views</span>
+              </div>
             </div>
           )}
         </div>

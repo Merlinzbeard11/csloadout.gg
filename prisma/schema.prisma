@@ -626,6 +626,7 @@ model Loadout {
   // Relationships
   weapon_skins LoadoutWeaponSkin[]
   upvote_records LoadoutUpvote[] // Phase 7d: Track user upvotes
+  view_records LoadoutView[] // Phase 7e: Track unique views
 
   // Indexes
   @@index([user_id]) // Fast user → loadouts queries
@@ -666,6 +667,37 @@ model LoadoutUpvote {
   @@index([user_id]) // Fast user → upvoted loadouts queries
 
   @@map("loadout_upvotes")
+}
+
+// Feature 08: Phase 7e - Loadout View Analytics
+// Tracks unique views with IP-based deduplication (24-hour window)
+// BDD Reference: features/08-budget-loadout-builder-phase7.feature (lines 207-249)
+//
+// Critical Gotchas:
+// - IP addresses hashed with SHA-256 for GDPR compliance
+// - Salt stored in environment variable (HASH_SALT)
+// - 24-hour deduplication window
+// - Owner views excluded from analytics
+// - View count denormalized in Loadout.views for performance
+model LoadoutView {
+  id String @id @default(uuid())
+
+  // Foreign key
+  loadout_id String
+  loadout    Loadout @relation(fields: [loadout_id], references: [id], onDelete: Cascade)
+
+  // IP address (hashed with SHA-256 + salt)
+  // GDPR compliant: original IP never stored
+  viewer_ip_hash String @db.VarChar(64) // SHA-256 produces 64-char hex string
+
+  // Timestamp
+  viewed_at DateTime @default(now())
+
+  // Composite index for 24h deduplication query
+  @@index([loadout_id, viewer_ip_hash, viewed_at])
+  @@index([loadout_id]) // Fast loadout → views queries
+
+  @@map("loadout_views")
 }
 
 // Weapon skins included in a loadout
