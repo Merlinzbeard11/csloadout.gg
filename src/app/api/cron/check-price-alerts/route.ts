@@ -31,6 +31,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { emailService } from '@/lib/email/email-service'
+import { pushService } from '@/lib/push/push-service'
 
 const COOLDOWN_MINUTES = 15
 
@@ -156,7 +157,47 @@ export async function GET(request: NextRequest) {
           }
         }
 
-        // TODO Phase 1f: Send push notification if notify_push = true
+        // Phase 1f: Send push notification if notify_push = true
+        // BDD Scenario: "Send push notification when alert triggers" (line 170)
+        if (alert.notify_push) {
+          // Fetch all push subscriptions for this user
+          const subscriptions = await prisma.pushSubscription.findMany({
+            where: { user_id: alert.user_id }
+          })
+
+          // Send to all subscriptions (user may have multiple devices)
+          for (const sub of subscriptions) {
+            const pushResult = await pushService.sendPriceAlertPush({
+              subscription: {
+                endpoint: sub.endpoint,
+                keys: {
+                  p256dh: sub.p256dh_key,
+                  auth: sub.auth_key
+                }
+              },
+              title: `Price Alert: ${alert.item.display_name}`,
+              body: `Now $${currentPrice.toFixed(2)} - Your target: $${targetPrice.toFixed(2)}`,
+              icon: alert.item.image_url,
+              url: lowestPrice.listing_url || '',
+              subscriptionId: sub.id
+            })
+
+            // Update trigger record with push status (once successful)
+            if (pushResult.success) {
+              await prisma.alertTrigger.update({
+                where: { id: trigger.id },
+                data: {
+                  push_sent: true,
+                  push_sent_at: new Date()
+                }
+              })
+              break // Only update once even if multiple subscriptions
+            } else {
+              console.error(`Failed to send push for alert ${alert.id} to subscription ${sub.id}:`, pushResult.error)
+              // Continue with other subscriptions even if one fails
+            }
+          }
+        }
       } catch (error) {
         console.error(`Failed to trigger alert ${alert.id}:`, error)
         // Continue processing other alerts even if one fails
