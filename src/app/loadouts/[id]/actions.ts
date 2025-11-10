@@ -150,8 +150,12 @@ export async function addItemToLoadoutAction(
       data: { actual_cost: newActualCost }
     })
 
-    // Revalidate page
+    // Revalidate cache (Phase 7i)
+    // Invalidate both UUID and slug routes for public loadouts
     revalidatePath(`/loadouts/${loadoutId}`)
+    if (loadout.slug) {
+      revalidatePath(`/loadouts/${loadout.slug}`)
+    }
 
     return {
       success: true,
@@ -222,8 +226,12 @@ export async function removeItemFromLoadoutAction(
       data: { actual_cost: newActualCost }
     })
 
-    // Revalidate page
+    // Revalidate cache (Phase 7i)
+    // Invalidate both UUID and slug routes for public loadouts
     revalidatePath(`/loadouts/${lwsk.loadout_id}`)
+    if (lwsk.loadout.slug) {
+      revalidatePath(`/loadouts/${lwsk.loadout.slug}`)
+    }
 
     return {
       success: true,
@@ -352,8 +360,12 @@ export async function replaceItemAction(
       return { newLwsk, newActualCost }
     })
 
-    // Revalidate page
+    // Revalidate cache (Phase 7i)
+    // Invalidate both UUID and slug routes for public loadouts
     revalidatePath(`/loadouts/${oldLwsk.loadout_id}`)
+    if (oldLwsk.loadout.slug) {
+      revalidatePath(`/loadouts/${oldLwsk.loadout.slug}`)
+    }
 
     return {
       success: true,

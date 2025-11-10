@@ -149,6 +149,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return baseMetadata
 }
 
+/**
+ * Phase 7i: Performance & Caching
+ * Cache public loadouts for 5 minutes to improve performance
+ */
+export const revalidate = 300 // 5 minutes in seconds
+
 export default async function LoadoutDetailPage({ params, searchParams }: PageProps) {
   // Optional authentication (public loadouts don't require auth)
   const session = await getSession()
