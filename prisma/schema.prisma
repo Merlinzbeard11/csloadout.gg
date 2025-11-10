@@ -299,6 +299,7 @@ model User {
   sessions  Session[]
   inventory UserInventory? // Feature 07: One-to-one inventory relationship
   loadouts  Loadout[] // Feature 08: User-created loadouts
+  loadout_upvotes LoadoutUpvote[] // Phase 7d: Loadouts upvoted by user
 
   // Timestamps
   created_at DateTime @default(now())
@@ -624,6 +625,7 @@ model Loadout {
 
   // Relationships
   weapon_skins LoadoutWeaponSkin[]
+  upvote_records LoadoutUpvote[] // Phase 7d: Track user upvotes
 
   // Indexes
   @@index([user_id]) // Fast user → loadouts queries
@@ -633,6 +635,37 @@ model Loadout {
   @@index([created_at]) // Sort by newest
 
   @@map("loadouts")
+}
+
+// Feature 08: Phase 7d - Loadout Upvotes
+// Junction table tracking which users upvoted which loadouts
+// BDD Reference: features/08-budget-loadout-builder-phase7.feature (lines 162-206)
+//
+// Critical Gotchas:
+// - Composite unique constraint prevents duplicate upvotes
+// - Cascading delete: upvotes deleted when loadout or user deleted
+// - Upvote count denormalized in Loadout.upvotes for performance
+model LoadoutUpvote {
+  id String @id @default(uuid())
+
+  // Foreign keys
+  loadout_id String
+  loadout    Loadout @relation(fields: [loadout_id], references: [id], onDelete: Cascade)
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  // Timestamp
+  created_at DateTime @default(now())
+
+  // Composite unique: ONE upvote per user per loadout
+  @@unique([loadout_id, user_id])
+
+  // Indexes
+  @@index([loadout_id]) // Fast loadout → upvotes queries
+  @@index([user_id]) // Fast user → upvoted loadouts queries
+
+  @@map("loadout_upvotes")
 }
 
 // Weapon skins included in a loadout

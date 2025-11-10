@@ -24,7 +24,9 @@ import { prisma } from '@/lib/prisma'
 import { ItemBrowser } from './item-browser'
 import { BudgetTracker } from './budget-tracker'
 import { SelectedItemsList } from './selected-items-list'
+import { UpvoteButton } from './upvote-button'
 import { addItemToLoadoutAction, removeItemFromLoadoutAction, replaceItemAction } from './actions'
+import { checkUserUpvotedAction } from './upvote-actions'
 
 interface PageProps {
   params: { id: string }
@@ -162,6 +164,11 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
   // Fetch items for current category with marketplace prices
   const categoryItems = await fetchItemsForCategory(currentCategory, categoryBudgets[currentCategory])
 
+  // Check if user has upvoted this loadout (Phase 7d)
+  const userUpvoted = session?.user?.id
+    ? await checkUserUpvotedAction(loadout.id, session.user.id)
+    : false
+
   return (
     <main className="min-h-screen bg-gray-50 py-8" aria-label="Loadout detail page">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -177,6 +184,19 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
           </div>
           {loadout.description && (
             <p className="mt-2 text-gray-600">{loadout.description}</p>
+          )}
+
+          {/* Upvote Button - Phase 7d */}
+          {loadout.is_public && (
+            <div className="mt-4">
+              <UpvoteButton
+                loadoutId={loadout.id}
+                userId={session?.user?.id || null}
+                isOwner={isOwner}
+                initialUpvoted={userUpvoted}
+                initialCount={loadout.upvotes}
+              />
+            </div>
           )}
         </div>
 
