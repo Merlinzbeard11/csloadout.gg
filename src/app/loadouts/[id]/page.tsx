@@ -415,8 +415,8 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
             {/* Selected Items List */}
             <SelectedItemsList
               selectedItems={selectedItems}
-              onRemove={isOwner ? removeItemFromLoadoutAction : async () => {}}
-              onChange={isOwner ? replaceItemAction : async () => {}}
+              onRemove={isOwner ? async (id: string, weaponType: string) => removeItemFromLoadoutAction(params.id, weaponType) : async () => {}}
+              onChange={isOwner ? async (oldId: string, weaponType: string, newItemId: string) => replaceItemAction(params.id, weaponType, newItemId) : async () => {}}
             />
           </div>
         </div>

@@ -33,8 +33,8 @@ interface SelectedItem {
 
 export interface SelectedItemsListProps {
   selectedItems: SelectedItem[]
-  onRemove: (id: string) => Promise<any>
-  onChange: (oldId: string, newItemId: string) => Promise<any>
+  onRemove: (id: string, weaponType: string) => Promise<any>
+  onChange: (oldId: string, weaponType: string, newItemId: string) => Promise<any>
 }
 
 export function SelectedItemsList({
@@ -56,10 +56,10 @@ export function SelectedItemsList({
   // Calculate total cost
   const totalCost = selectedItems.reduce((sum, item) => sum + item.price, 0)
 
-  const handleRemove = async (id: string) => {
+  const handleRemove = async (id: string, weaponType: string) => {
     setRemovingId(id)
     try {
-      await onRemove(id)
+      await onRemove(id, weaponType)
     } catch (error) {
       console.error('Failed to remove item:', error)
     } finally {
@@ -156,7 +156,7 @@ export function SelectedItemsList({
                   {/* Action Buttons */}
                   <div className="flex gap-2 mt-3">
                     <button
-                      onClick={() => handleRemove(item.id)}
+                      onClick={() => handleRemove(item.id, item.weapon_type)}
                       disabled={removingId === item.id}
                       className="flex-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >

@@ -36,7 +36,7 @@ export interface ItemBrowserProps {
   categoryBudget: number
   remainingBudget: number
   selectedItems: string[]
-  onItemSelect: (loadoutId: string, itemId: string) => Promise<any>
+  onItemSelect: (loadoutId: string, itemId: string, weaponType: string) => Promise<any>
   items: Item[]
   loadoutId: string
 }
@@ -82,13 +82,13 @@ export function ItemBrowser({
   )
 
   // Handle item selection with loading state and error handling
-  const handleItemSelect = async (itemId: string) => {
+  const handleItemSelect = async (itemId: string, weaponType: string) => {
     setError(null)
     setPendingItemId(itemId)
 
     startTransition(async () => {
       try {
-        const result = await onItemSelect(loadoutId, itemId)
+        const result = await onItemSelect(loadoutId, itemId, weaponType)
 
         if (result && !result.success) {
           setError(result.error || 'Failed to add item to loadout')
@@ -255,7 +255,7 @@ export function ItemBrowser({
                 )}
 
                 <button
-                  onClick={() => handleItemSelect(item.id)}
+                  onClick={() => handleItemSelect(item.id, item.weapon_type || '')}
                   disabled={isOverBudget || isSelected || bestPrice === 0 || pendingItemId === item.id}
                   className={`
                     w-full mt-2 px-3 py-1 text-xs font-medium rounded flex items-center justify-center gap-1
