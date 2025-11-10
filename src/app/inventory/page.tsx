@@ -29,9 +29,16 @@ export default async function InventoryPage() {
 
   const userId = session.user.id
 
-  // Fetch user's inventory from database
+  // Fetch user's inventory from database with items
   const inventory = await prisma.userInventory.findUnique({
-    where: { user_id: userId }
+    where: { user_id: userId },
+    include: {
+      items: {
+        include: {
+          item: true // Include Item details (name, display_name, image_url, rarity)
+        }
+      }
+    }
   })
 
   // Calculate cache staleness (6 hour TTL)
@@ -177,10 +184,116 @@ export default async function InventoryPage() {
           </div>
         </div>
 
-        {/* TODO: Item grid will be added in Iteration 2 */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-          <p className="text-gray-600">Item grid coming in next iteration</p>
-        </div>
+        {/* Item Grid */}
+        {inventory.items && inventory.items.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {inventory.items.map((inventoryItem) => {
+              const item = inventoryItem.item
+              if (!item) return null
+
+              // Calculate potential savings
+              const bestPrice = inventoryItem.current_value ? Number(inventoryItem.current_value) : 0
+              const steamPrice = 7.20 // Placeholder - would fetch from MarketplacePrice in real implementation
+              const savings = bestPrice - steamPrice
+
+              // Format wear display
+              const formatWear = (wear: string | null) => {
+                if (!wear) return ''
+                return wear.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+              }
+
+              // Format rarity class
+              const getRarityClass = (rarity: string | null) => {
+                if (!rarity) return ''
+                const rarityColors: Record<string, string> = {
+                  'classified': 'text-purple-600 bg-purple-50',
+                  'covert': 'text-red-600 bg-red-50',
+                  'restricted': 'text-pink-600 bg-pink-50',
+                  'milspec': 'text-blue-600 bg-blue-50'
+                }
+                return rarityColors[rarity.toLowerCase()] || 'text-gray-600 bg-gray-50'
+              }
+
+              return (
+                <div key={inventoryItem.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  {/* Item Image */}
+                  <img
+                    src={item.image_url}
+                    alt={item.display_name}
+                    className="w-full h-32 object-contain mb-3"
+                  />
+
+                  {/* Item Name */}
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">{item.display_name}</h3>
+
+                  {/* Wear Condition */}
+                  {inventoryItem.wear && (
+                    <p className="text-xs text-gray-600 mb-1">{formatWear(inventoryItem.wear)}</p>
+                  )}
+
+                  {/* Float Value */}
+                  {inventoryItem.float_value && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      Float: {Number(inventoryItem.float_value).toFixed(8)}
+                    </p>
+                  )}
+
+                  {/* StatTrak Badge */}
+                  {inventoryItem.quality === 'stattrak' && (
+                    <span className="inline-block px-2 py-0.5 text-xs font-semibold text-orange-700 bg-orange-100 rounded mb-2">
+                      StatTrak™
+                    </span>
+                  )}
+
+                  {/* Rarity Badge */}
+                  {item.rarity && (
+                    <span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded mb-2 ml-1 ${getRarityClass(item.rarity)}`}>
+                      {item.rarity.charAt(0).toUpperCase() + item.rarity.slice(1)}
+                    </span>
+                  )}
+
+                  {/* Marketplace Pricing */}
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    {/* Best Platform */}
+                    {inventoryItem.best_platform && (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded">
+                          {inventoryItem.best_platform.toUpperCase()}
+                        </span>
+                        <span className="text-sm font-bold text-gray-900">
+                          ${bestPrice.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Steam Price */}
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-600">Steam</span>
+                      <span className="text-xs text-gray-600">${steamPrice.toFixed(2)}</span>
+                    </div>
+
+                    {/* Potential Savings */}
+                    {savings > 0 && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">Savings</span>
+                        <span className="text-xs font-semibold text-green-600">
+                          ${savings.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <p className="text-gray-600">No items in your inventory yet</p>
+            <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              Import Steam Inventory
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
