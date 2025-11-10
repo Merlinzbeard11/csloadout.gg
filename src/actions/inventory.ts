@@ -23,11 +23,17 @@ export interface RetryImportResult {
   syncStatus?: string
 }
 
+export interface ImportProgress {
+  current: number
+  total: number | null
+}
+
 export interface ImportResult {
   success: boolean
   message: string
   status: 'importing' | 'complete' | 'error'
   itemsImported?: number
+  progress?: ImportProgress
 }
 
 /**

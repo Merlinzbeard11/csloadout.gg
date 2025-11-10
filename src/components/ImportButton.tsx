@@ -15,7 +15,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { startInventoryImport, type ImportResult } from '@/actions/inventory'
+import { startInventoryImport, type ImportResult, type ImportProgress } from '@/actions/inventory'
 
 export interface ImportButtonProps {
   className?: string
@@ -25,22 +25,34 @@ export default function ImportButton({ className }: ImportButtonProps) {
   const [status, setStatus] = useState<'idle' | 'importing' | 'complete' | 'error'>('idle')
   const [message, setMessage] = useState<string>('')
   const [itemsImported, setItemsImported] = useState<number>(0)
+  const [progress, setProgress] = useState<ImportProgress | null>(null)
   const router = useRouter()
 
   const handleImport = async () => {
     setStatus('importing')
     setMessage('Fetching inventory from Steam...')
+    setProgress(null)
 
     try {
       const result: ImportResult = await startInventoryImport()
 
       if (result.success) {
-        setStatus('complete')
-        setMessage('Import Complete')
-        setItemsImported(result.itemsImported || 0)
+        // Update progress if provided
+        if (result.progress) {
+          setProgress(result.progress)
+        }
 
-        // Refresh page to show imported inventory
-        router.refresh()
+        if (result.status === 'complete') {
+          setStatus('complete')
+          setMessage('Import Complete')
+          setItemsImported(result.itemsImported || 0)
+
+          // Refresh page to show imported inventory
+          router.refresh()
+        } else {
+          // Still importing, keep status
+          setStatus('importing')
+        }
       } else {
         setStatus('error')
         setMessage(result.message)
@@ -56,6 +68,14 @@ export default function ImportButton({ className }: ImportButtonProps) {
   const isComplete = status === 'complete'
   const isError = status === 'error'
 
+  // Calculate progress percentage
+  const progressPercentage = progress && progress.total
+    ? Math.round((progress.current / progress.total) * 100)
+    : null
+
+  // Format numbers with commas
+  const formatNumber = (num: number) => num.toLocaleString('en-US')
+
   return (
     <div className="space-y-4">
       <button
@@ -68,13 +88,43 @@ export default function ImportButton({ className }: ImportButtonProps) {
 
       {/* Progress Indicator */}
       {isImporting && (
-        <div role="status" className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          {/* Loading spinner */}
-          <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className="text-blue-900 font-medium">{message}</p>
+        <div role="status" className="space-y-3">
+          <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            {/* Loading spinner */}
+            <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+
+            <div className="flex-1">
+              {/* Progress text */}
+              {progress && progress.total ? (
+                <p className="text-blue-900 font-medium">
+                  Fetching... {formatNumber(progress.current)}/{formatNumber(progress.total)} items ({progressPercentage}%)
+                </p>
+              ) : progress && !progress.total ? (
+                <p className="text-blue-900 font-medium">
+                  Fetching... {formatNumber(progress.current)} items
+                </p>
+              ) : (
+                <p className="text-blue-900 font-medium">{message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          {progress && progress.total && (
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                role="progressbar"
+                aria-valuenow={progressPercentage || 0}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          )}
         </div>
       )}
 
