@@ -33,35 +33,42 @@ export default function ImportButton({ className }: ImportButtonProps) {
     setMessage('Fetching inventory from Steam...')
     setProgress(null)
 
-    try {
-      const result: ImportResult = await startInventoryImport()
+    // Polling function for multi-page simulation
+    const pollProgress = async () => {
+      try {
+        const result: ImportResult = await startInventoryImport()
 
-      if (result.success) {
-        // Update progress if provided
-        if (result.progress) {
-          setProgress(result.progress)
-        }
+        if (result.success) {
+          // Update progress if provided
+          if (result.progress) {
+            setProgress(result.progress)
+          }
 
-        if (result.status === 'complete') {
-          setStatus('complete')
-          setMessage('Import Complete')
-          setItemsImported(result.itemsImported || 0)
+          if (result.status === 'complete') {
+            setStatus('complete')
+            setMessage('Import Complete')
+            setItemsImported(result.itemsImported || 0)
 
-          // Refresh page to show imported inventory
-          router.refresh()
+            // Refresh page to show imported inventory
+            router.refresh()
+          } else {
+            // Still importing - poll again after 2 seconds
+            setStatus('importing')
+            setTimeout(pollProgress, 2000)
+          }
         } else {
-          // Still importing, keep status
-          setStatus('importing')
+          setStatus('error')
+          setMessage(result.message)
         }
-      } else {
+      } catch (error) {
+        console.error('Import error:', error)
         setStatus('error')
-        setMessage(result.message)
+        setMessage(error instanceof Error ? error.message : 'Failed to fetch inventory. Please try again.')
       }
-    } catch (error) {
-      console.error('Import error:', error)
-      setStatus('error')
-      setMessage(error instanceof Error ? error.message : 'Failed to fetch inventory. Please try again.')
     }
+
+    // Start polling
+    pollProgress()
   }
 
   const isImporting = status === 'importing'
@@ -132,7 +139,7 @@ export default function ImportButton({ className }: ImportButtonProps) {
       {isComplete && (
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-green-900 font-semibold">{message}</p>
-          <p className="text-green-700 text-sm mt-1">{itemsImported} items imported</p>
+          <p className="text-green-700 text-sm mt-1">{formatNumber(itemsImported)} items imported</p>
         </div>
       )}
 
