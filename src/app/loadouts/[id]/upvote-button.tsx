@@ -61,7 +61,8 @@ export function UpvoteButton({
       const result = await toggleUpvoteAction(loadoutId, userId)
 
       if (!result.success) {
-        setError(result.error || 'Failed to toggle upvote')
+        // User-friendly error message (Phase 7h)
+        setError('Unable to upvote. Please try again.')
         // Rollback optimistic update on error
         setOptimisticState(!newUpvoted)
       }
