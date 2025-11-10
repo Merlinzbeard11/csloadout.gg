@@ -42,7 +42,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     where: isUUID
       ? { id: params.id }
       : { slug: params.id, is_public: true },
-    select: { name: true, is_public: true, slug: true }
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      budget: true,
+      is_public: true,
+      slug: true,
+      created_at: true,
+      updated_at: true,
+      upvotes: true,
+      views: true
+    }
   })
 
   if (!loadout) {
@@ -51,11 +62,90 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
   }
 
-  return {
+  // Truncate description to 160 characters for optimal SEO
+  const metaDescription = loadout.description
+    ? (loadout.description.length > 160
+        ? loadout.description.slice(0, 157) + '...'
+        : loadout.description)
+    : `View and customize this CS2 loadout: ${loadout.name}. Budget: $${Number(loadout.budget).toFixed(2)}`
+
+  // Use slug for canonical URL (preferred over UUID)
+  const canonicalSlug = loadout.slug || params.id
+
+  // Base metadata (always present)
+  const baseMetadata: Metadata = {
     title: `${loadout.name} - CSLoadout.gg`,
-    description: `View and customize your CS2 loadout: ${loadout.name}`,
+    description: metaDescription,
     robots: loadout.is_public ? 'index, follow' : 'noindex, nofollow'
   }
+
+  // Enhanced metadata for public loadouts only (Phase 7f)
+  if (loadout.is_public) {
+    return {
+      ...baseMetadata,
+      openGraph: {
+        title: loadout.name,
+        description: metaDescription,
+        type: 'website',
+        url: `/loadouts/${canonicalSlug}`,
+        siteName: 'CSLoadout.gg',
+        images: [
+          {
+            url: `/api/og-image/${loadout.id}`,
+            width: 1200,
+            height: 630,
+            alt: `${loadout.name} - CSLoadout.gg`
+          }
+        ]
+      },
+      // Twitter Card auto-inherits from openGraph (no duplication needed)
+      twitter: {
+        card: 'summary_large_image',
+        creator: '@csloadoutgg'
+      },
+      // Canonical URL for SEO consolidation
+      alternates: {
+        canonical: `/loadouts/${canonicalSlug}`
+      },
+      // Structured data for rich snippets
+      other: {
+        'script:ld+json': JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: loadout.name,
+          description: metaDescription,
+          url: `https://csloadout.gg/loadouts/${canonicalSlug}`,
+          datePublished: loadout.created_at.toISOString(),
+          dateModified: loadout.updated_at.toISOString(),
+          author: {
+            '@type': 'Organization',
+            name: 'CSLoadout.gg'
+          },
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: loadout.upvotes,
+            reviewCount: loadout.upvotes,
+            bestRating: loadout.upvotes,
+            worstRating: 0
+          },
+          interactionStatistic: [
+            {
+              '@type': 'InteractionCounter',
+              interactionType: 'https://schema.org/LikeAction',
+              userInteractionCount: loadout.upvotes
+            },
+            {
+              '@type': 'InteractionCounter',
+              interactionType: 'https://schema.org/ViewAction',
+              userInteractionCount: loadout.views
+            }
+          ]
+        })
+      }
+    }
+  }
+
+  return baseMetadata
 }
 
 export default async function LoadoutDetailPage({ params, searchParams }: PageProps) {

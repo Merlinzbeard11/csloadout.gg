@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   title: "csloadout.gg - CS2 Item Database & Price Comparison",
   description: "Browse 7,000+ CS2 items and compare prices across marketplaces",
 };
