@@ -25,6 +25,7 @@ import { ItemBrowser } from './item-browser'
 import { BudgetTracker } from './budget-tracker'
 import { SelectedItemsList } from './selected-items-list'
 import { UpvoteButton } from './upvote-button'
+import { ShareButtons } from './share-buttons'
 import { addItemToLoadoutAction, removeItemFromLoadoutAction, replaceItemAction } from './actions'
 import { checkUserUpvotedAction } from './upvote-actions'
 import { trackLoadoutViewAction } from './view-tracking-actions'
@@ -307,6 +308,18 @@ export default async function LoadoutDetailPage({ params, searchParams }: PagePr
                 <span className="font-medium">{loadout.views.toLocaleString()}</span>
                 <span className="text-sm">views</span>
               </div>
+            </div>
+          )}
+
+          {/* Share Buttons - Phase 7g */}
+          {loadout.is_public && (
+            <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <ShareButtons
+                loadoutId={loadout.id}
+                loadoutName={loadout.name}
+                loadoutSlug={loadout.slug}
+                loadoutDescription={loadout.description}
+              />
             </div>
           )}
         </div>
