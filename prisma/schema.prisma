@@ -416,6 +416,11 @@ model UserInventory {
   // BDD: "Import large inventory with pagination"
   last_asset_id String? // Steam asset ID cursor for incremental sync
 
+  // Import progress tracking for resume functionality
+  // BDD: "Resume failed import for large inventory" (lines 73-80)
+  import_status        String? @default("pending") // "pending", "in_progress", "completed", "failed"
+  items_imported_count Int?    @default(0) // Progress tracker for partial imports
+
   // GDPR compliance
   // BDD: "Auto-delete stale inventories (90-day retention)"
   consent_given    Boolean   @default(false) // User accepted privacy policy

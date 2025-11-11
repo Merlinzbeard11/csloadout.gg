@@ -6,6 +6,7 @@ import InventoryPrivacyWrapper from '@/components/InventoryPrivacyWrapper'
 import ImportButton from '@/components/ImportButton'
 import RefreshButton from '@/components/RefreshButton'
 import BackgroundRefreshTrigger from '@/components/BackgroundRefreshTrigger'
+import RetryImportButton from '@/components/RetryImportButton'
 
 /**
  * Inventory Dashboard Page - Server Component
@@ -150,6 +151,31 @@ export default async function InventoryPage() {
             <p className="text-yellow-700">
               {inventory.error_message || 'Steam API rate limit reached. Please try again in a few minutes.'}
             </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Handle failed import state - show retry button
+  if (inventory && inventory.import_status === 'failed') {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-orange-900 mb-2">
+              Import Failed
+            </h2>
+            <p className="text-orange-700 mb-4">
+              {inventory.error_message || 'The inventory import did not complete successfully.'}
+            </p>
+            <p className="text-sm text-orange-600 mb-4">
+              Progress: {inventory.items_imported_count?.toLocaleString() || 0} items imported before failure
+            </p>
+            <RetryImportButton
+              lastAssetId={inventory.last_asset_id}
+              itemsImported={inventory.items_imported_count || 0}
+            />
           </div>
         </div>
       </div>
