@@ -286,6 +286,9 @@ export default async function InventoryPage() {
               const steamPrice = 7.20 // Placeholder - would fetch from MarketplacePrice in real implementation
               const savings = bestPrice - steamPrice
 
+              // Check if price data is missing (no best_platform indicates no marketplace data)
+              const hasPriceData = inventoryItem.best_platform !== null
+
               // Format wear display
               const formatWear = (wear: string | null) => {
                 if (!wear) return ''
@@ -344,7 +347,24 @@ export default async function InventoryPage() {
 
                   {/* Marketplace Pricing */}
                   <div className="mt-3 pt-3 border-t border-gray-200">
-                    {/* Best Platform */}
+                    {/* Missing Price Data Warning */}
+                    {!hasPriceData && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded px-2 py-2 mb-2">
+                        <div className="flex items-start gap-1">
+                          <svg className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold text-yellow-900">Price data unavailable</p>
+                            <p className="text-xs text-yellow-700 mt-0.5">
+                              Item will be imported with $0 value
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Best Platform (if available) */}
                     {inventoryItem.best_platform && (
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded">
@@ -356,14 +376,24 @@ export default async function InventoryPage() {
                       </div>
                     )}
 
-                    {/* Steam Price */}
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-600">Steam</span>
-                      <span className="text-xs text-gray-600">${steamPrice.toFixed(2)}</span>
-                    </div>
+                    {/* Price Display - Always show, even if $0 */}
+                    {!inventoryItem.best_platform && (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-600">Value</span>
+                        <span className="text-sm font-bold text-gray-500">$0.00</span>
+                      </div>
+                    )}
 
-                    {/* Potential Savings */}
-                    {savings > 0 && (
+                    {/* Steam Price (only show if we have price data) */}
+                    {hasPriceData && (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-gray-600">Steam</span>
+                        <span className="text-xs text-gray-600">${steamPrice.toFixed(2)}</span>
+                      </div>
+                    )}
+
+                    {/* Potential Savings (only show if we have price data) */}
+                    {savings > 0 && hasPriceData && (
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500">Savings</span>
                         <span className="text-xs font-semibold text-green-600">
