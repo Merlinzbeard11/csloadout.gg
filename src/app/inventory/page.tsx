@@ -328,6 +328,38 @@ export default async function InventoryPage() {
                     </div>
                   )}
 
+                  {/* Trade Lock Indicator */}
+                  {!inventoryItem.can_trade && inventoryItem.trade_hold_until && (
+                    <div className="mb-2 bg-red-50 border border-red-200 rounded px-2 py-2" data-testid="trade-lock-section">
+                      <div className="flex items-start gap-2">
+                        <span className="text-red-600">🔒</span>
+                        <div className="flex-1">
+                          {(() => {
+                            const now = new Date()
+                            const holdDate = new Date(inventoryItem.trade_hold_until)
+                            const daysRemaining = Math.ceil((holdDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+                            const formattedDate = holdDate.toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })
+
+                            return (
+                              <>
+                                <p className="text-xs font-semibold text-red-900">
+                                  Tradeable in {daysRemaining} {daysRemaining === 1 ? 'day' : 'days'}
+                                </p>
+                                <p className="text-xs text-red-700">
+                                  Cannot sell until {formattedDate}
+                                </p>
+                              </>
+                            )
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Wear Condition */}
                   {inventoryItem.wear && (
                     <p className="text-xs text-gray-600 mb-1">{formatWear(inventoryItem.wear)}</p>
