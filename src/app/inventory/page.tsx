@@ -137,8 +137,11 @@ export default async function InventoryPage() {
     )
   }
 
-  // Check if inventory is private (will trigger modal via wrapper)
+  // Check if inventory is private
   const isPrivate = inventory?.sync_status === 'private'
+
+  // Check if we have cached data (inventory was previously imported)
+  const hasCachedData = inventory && inventory.total_items > 0
 
   // Handle rate limit error state
   if (inventory && inventory.sync_status === 'rate_limited') {
@@ -185,7 +188,7 @@ export default async function InventoryPage() {
 
   // Display imported inventory
   return (
-    <InventoryPrivacyWrapper isPrivate={isPrivate}>
+    <InventoryPrivacyWrapper isPrivate={isPrivate} hasCachedData={hasCachedData}>
       <BackgroundRefreshTrigger isStale={isStale} />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -195,7 +198,29 @@ export default async function InventoryPage() {
           </div>
           <p className="text-sm text-gray-500 mb-6">
             Last synced: {formatLastSynced(inventory.last_synced)}
+            {isPrivate && <span className="text-orange-600 font-medium"> (inventory now private)</span>}
           </p>
+
+          {/* Privacy Warning Banner */}
+          {isPrivate && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <svg className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div className="flex-1">
+                  <h3 className="text-orange-900 font-semibold mb-1">Your inventory is now private</h3>
+                  <p className="text-orange-800 text-sm mb-2">
+                    We can't update your inventory while it's set to private in Steam.
+                    The data shown below is from your last sync.
+                  </p>
+                  <p className="text-orange-700 text-xs">
+                    To enable updates, make your inventory public in Steam privacy settings.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

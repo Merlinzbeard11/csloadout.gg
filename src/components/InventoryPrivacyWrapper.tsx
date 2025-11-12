@@ -20,11 +20,13 @@ import { useRouter } from 'next/navigation'
 
 export interface InventoryPrivacyWrapperProps {
   isPrivate: boolean
+  hasCachedData?: boolean
   children: React.ReactNode
 }
 
 export default function InventoryPrivacyWrapper({
   isPrivate,
+  hasCachedData = false,
   children
 }: InventoryPrivacyWrapperProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -32,12 +34,13 @@ export default function InventoryPrivacyWrapper({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const router = useRouter()
 
-  // Open modal automatically if inventory is private
+  // Open modal automatically if inventory is private AND no cached data
+  // If we have cached data, show warning banner instead (privacy change scenario)
   useEffect(() => {
-    if (isPrivate) {
+    if (isPrivate && !hasCachedData) {
       setIsModalOpen(true)
     }
-  }, [isPrivate])
+  }, [isPrivate, hasCachedData])
 
   const handleRetry = async () => {
     setIsRetrying(true)
