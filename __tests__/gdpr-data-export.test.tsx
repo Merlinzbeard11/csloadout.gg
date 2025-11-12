@@ -32,12 +32,11 @@ describe('GDPR Data Export (TDD - Iteration 27)', () => {
   let testItemId: string
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-export-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-export-' } } })
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
 
     // Create test user
     const user = await prisma.user.create({
@@ -72,13 +71,9 @@ describe('GDPR Data Export (TDD - Iteration 27)', () => {
     })
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-export-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-export-' } } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   it('should require authentication', async () => {

@@ -30,12 +30,13 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
   let testUsers: Array<{ id: string; steam_id: string }>
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-cron-' } } })
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear all mocks
+    jest.clearAllMocks()
 
     // Reset mock
-    mockRefreshInventoryData.mockClear()
     mockRefreshInventoryData.mockResolvedValue({
       success: true,
       message: 'Inventory refreshed successfully'
@@ -44,10 +45,9 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     testUsers = []
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-cron-' } } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   it('should require CRON_SECRET authentication', async () => {
