@@ -345,6 +345,23 @@ export default async function InventoryPage() {
                     </span>
                   )}
 
+                  {/* Stickers Section */}
+                  {inventoryItem.stickers && Array.isArray(inventoryItem.stickers) && inventoryItem.stickers.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-200" data-testid="stickers-section">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Applied Stickers:</p>
+                      <div className="space-y-1">
+                        {(inventoryItem.stickers as Array<{name: string, position: number, wear?: number}>).map((sticker, index) => (
+                          <div key={index} className="flex items-center gap-2 text-xs">
+                            <span className="flex-shrink-0 w-5 h-5 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center font-bold text-xs">
+                              {sticker.position}
+                            </span>
+                            <span className="text-gray-700">{sticker.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Marketplace Pricing */}
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     {/* Missing Price Data Warning */}
