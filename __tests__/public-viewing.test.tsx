@@ -85,11 +85,10 @@ describe('Phase 7b: Public Viewing by Slug', () => {
     privateLoadoutId = privateLoadout.id
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.loadout.deleteMany({
-      where: { user_id: { in: [testUserId, otherUserId] } }
-    })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
+  })
     await prisma.user.deleteMany({
       where: { id: { in: [testUserId, otherUserId] } }
     })

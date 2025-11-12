@@ -81,13 +81,9 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     })
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   it('should import item with $0.00 value when no marketplace prices exist', async () => {

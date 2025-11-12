@@ -25,6 +25,12 @@ describe('Alert Checker Service - Phase 1d: Alert Triggering Logic', () => {
   let testItemId: string
 
   beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
     // Create test user with email for notifications
     const testUser = await prisma.user.create({
       data: {
@@ -72,13 +78,9 @@ describe('Alert Checker Service - Phase 1d: Alert Triggering Logic', () => {
     })
   })
 
-  afterEach(async () => {
-    // Cleanup in reverse dependency order
-    await prisma.alertTrigger.deleteMany({})
-    await prisma.priceAlert.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: 'test_steam_alert_checker' } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   /**

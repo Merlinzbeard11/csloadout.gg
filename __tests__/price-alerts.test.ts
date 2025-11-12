@@ -33,6 +33,12 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
   let testAlertId: string
 
   beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
     // Create test user
     const testUser = await prisma.user.create({
       data: {
@@ -80,13 +86,9 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
     })
   })
 
-  afterEach(async () => {
-    // Cleanup in reverse order of foreign key dependencies
-    await prisma.alertTrigger.deleteMany({})
-    await prisma.priceAlert.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({})
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // ============================================================================
@@ -276,6 +278,12 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
 
   describe('Alert Triggering Logic', () => {
     beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
       const alert = await prisma.priceAlert.create({
         data: {
           user_id: testUserId,
@@ -479,6 +487,12 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
 
   describe('Alert Management', () => {
     beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
       const alert = await prisma.priceAlert.create({
         data: {
           user_id: testUserId,
@@ -621,6 +635,12 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
 
   describe('Alert History', () => {
     beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
       const alert = await prisma.priceAlert.create({
         data: {
           user_id: testUserId,

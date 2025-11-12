@@ -26,6 +26,12 @@ describe('Email Notification Service - Phase 1e', () => {
   let testAlertId: string
 
   beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
     // Create test user with email
     const testUser = await prisma.user.create({
       data: {
@@ -85,14 +91,9 @@ describe('Email Notification Service - Phase 1e', () => {
     testAlertId = alert.id
   })
 
-  afterEach(async () => {
-    // Cleanup in reverse dependency order
-    await prisma.alertTrigger.deleteMany({})
-    await prisma.priceAlert.deleteMany({})
-    await prisma.emailSuppressionList.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: 'test_email_notifications' } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   /**

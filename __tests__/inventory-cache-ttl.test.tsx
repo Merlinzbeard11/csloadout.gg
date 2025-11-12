@@ -40,11 +40,14 @@ describe('Cache TTL Enforcement (TDD - Iteration 16)', () => {
   let testInventoryId: string
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
+    // (Manual cleanup removed - handled by transaction rollback)
+await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
@@ -66,12 +69,9 @@ describe('Cache TTL Enforcement (TDD - Iteration 16)', () => {
     })
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   it('should display "Last synced: 3 hours ago" when cache is 3 hours old', async () => {

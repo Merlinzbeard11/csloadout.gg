@@ -42,10 +42,14 @@ describe('Sticker Display (TDD - Iteration 22)', () => {
   let testItemId: string
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
+    // (Manual cleanup removed - handled by transaction rollback)
+await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.deleteMany({})
     await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
@@ -82,13 +86,9 @@ describe('Sticker Display (TDD - Iteration 22)', () => {
     })
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   it('should display all 4 stickers on item with stickers', async () => {

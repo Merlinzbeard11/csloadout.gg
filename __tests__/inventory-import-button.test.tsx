@@ -105,12 +105,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
     })
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   it('should display "Import Steam Inventory" button in empty state', async () => {

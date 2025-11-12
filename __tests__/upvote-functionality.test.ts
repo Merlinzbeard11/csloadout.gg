@@ -84,16 +84,10 @@ describe('Phase 7d: Upvote Functionality', () => {
     privateLoadoutId = privateLoadout.id
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.loadoutUpvote.deleteMany({
-      where: {
-        OR: [
-          { user_id: testUserId },
-          { user_id: otherUserId }
-        ]
-      }
-    })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
+  })
     await prisma.loadout.deleteMany({
       where: { user_id: { in: [testUserId, otherUserId] } }
     })

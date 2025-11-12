@@ -76,11 +76,9 @@ describe('Phase 7e: View Analytics', () => {
     privateLoadoutId = privateLoadout.id
   })
 
-  afterEach(async () => {
-    // Cleanup in reverse order of foreign keys
-    await prisma.loadoutView.deleteMany({})
-    await prisma.loadout.deleteMany({})
-    await prisma.user.deleteMany({})
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   describe('IP Hashing', () => {

@@ -87,11 +87,10 @@ describe('Phase 7c: Public Loadout Gallery', () => {
     }
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.loadout.deleteMany({
-      where: { user_id: testUserId }
-    })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
+  })
     await prisma.user.deleteMany({
       where: { id: testUserId }
     })

@@ -60,11 +60,10 @@ describe('Resume Failed Import (TDD - RED Phase)', () => {
     })
   })
 
-  afterEach(async () => {
-    // Cleanup
-    await prisma.inventoryItem.deleteMany({
-      where: { inventory: { user_id: testUserId } }
-    })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
+  })
     await prisma.userInventory.deleteMany({
       where: { user_id: testUserId }
     })

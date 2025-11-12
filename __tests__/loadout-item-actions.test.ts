@@ -134,13 +134,9 @@ describe('Loadout Item Server Actions', () => {
     })
   })
 
-  afterEach(async () => {
-    // Cleanup
-    await prisma.loadoutWeaponSkin.deleteMany({})
-    await prisma.loadout.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: 'test-steam-id' } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // ============================================================================

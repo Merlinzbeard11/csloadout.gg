@@ -27,6 +27,12 @@ describe('Alert History - Phase 1i', () => {
   let testAlertId: string
 
   beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
     // Create test user
     const testUser = await prisma.user.create({
       data: {
@@ -70,12 +76,9 @@ describe('Alert History - Phase 1i', () => {
     testAlertId = testAlert.id
   })
 
-  afterEach(async () => {
-    // Cleanup in reverse dependency order
-    await prisma.alertTrigger.deleteMany({})
-    await prisma.priceAlert.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: 'test_alert_history' } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   /**

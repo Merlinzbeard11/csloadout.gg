@@ -67,11 +67,10 @@ describe('Phase 7a: Publish Toggle Server Action', () => {
     testLoadoutId = testLoadout.id
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.loadout.deleteMany({
-      where: { user_id: { in: [testUserId, otherUserId] } }
-    })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
+  })
     await prisma.user.deleteMany({
       where: { id: { in: [testUserId, otherUserId] } }
     })

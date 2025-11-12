@@ -34,6 +34,12 @@ describe('Push Notification Service - Phase 1f', () => {
   let testSubscriptionId: string
 
   beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
     // Create test user
     const testUser = await prisma.user.create({
       data: {
@@ -105,14 +111,9 @@ describe('Push Notification Service - Phase 1f', () => {
     testSubscriptionId = subscription.id
   })
 
-  afterEach(async () => {
-    // Cleanup in reverse dependency order
-    await prisma.alertTrigger.deleteMany({})
-    await prisma.priceAlert.deleteMany({})
-    await prisma.pushSubscription.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: 'test_push_notifications' } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   /**

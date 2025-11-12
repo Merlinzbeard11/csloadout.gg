@@ -58,11 +58,9 @@ describe('Error Handling - Phase 1h', () => {
     testItemId = testItem.id
   })
 
-  afterEach(async () => {
-    // Cleanup
-    await prisma.priceAlert.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: 'test_error_handling' } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   /**

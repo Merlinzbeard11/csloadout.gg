@@ -41,10 +41,14 @@ describe('Trade-Locked Items (TDD - Iteration 24)', () => {
   let testItemId: string
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
+    // Clear mock state
+    jest.clearAllMocks()
+
+    // (Manual cleanup removed - handled by transaction rollback)
+await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.deleteMany({})
     await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
@@ -81,13 +85,9 @@ describe('Trade-Locked Items (TDD - Iteration 24)', () => {
     })
   })
 
-  afterEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+  afterEach(() => {
+    // Rollback transaction - automatic cleanup, no manual deletion needed
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   it('should display "🔒 Tradeable in 7 days" for trade-locked item', async () => {
