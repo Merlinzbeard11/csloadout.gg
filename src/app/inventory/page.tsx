@@ -89,11 +89,12 @@ export default async function InventoryPage() {
     const diff = now - lastSynced.getTime()
     const minutes = Math.floor(diff / (1000 * 60))
     const hours = Math.floor(diff / (1000 * 60 * 60))
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
 
-    if (minutes < 1) return 'Just now'
-    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
-    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-    return lastSynced.toLocaleDateString()
+    if (minutes < 1) return 'just now'
+    if (minutes < 60) return `${minutes} minutes ago`
+    if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`
+    return `${days} ${days === 1 ? 'day' : 'days'} ago`
   }
 
   // Empty state - no inventory imported yet
@@ -188,10 +189,13 @@ export default async function InventoryPage() {
       <BackgroundRefreshTrigger isStale={isStale} />
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-2">
             <h1 className="text-3xl font-bold text-gray-900">My Inventory</h1>
             <RefreshButton isStale={isStale} />
-        </div>
+          </div>
+          <p className="text-sm text-gray-500 mb-6">
+            Last synced: {formatLastSynced(inventory.last_synced)}
+          </p>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
