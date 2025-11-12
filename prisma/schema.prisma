@@ -310,6 +310,7 @@ model User {
   loadout_upvotes LoadoutUpvote[] // Phase 7d: Loadouts upvoted by user
   price_alerts PriceAlert[] @relation("user_price_alerts") // Feature 09: Price alerts
   push_subscriptions PushSubscription[] @relation("user_push_subscriptions") // Feature 09: Push notifications
+  audit_logs AuditLog[] // GDPR: Compliance audit trail
 
   // Timestamps
   created_at DateTime @default(now())
@@ -422,10 +423,14 @@ model UserInventory {
   items_imported_count Int?    @default(0) // Progress tracker for partial imports
 
   // GDPR compliance
+  // BDD: "Request consent before first import" (lines 331-345)
   // BDD: "Auto-delete stale inventories (90-day retention)"
-  consent_given    Boolean   @default(false) // User accepted privacy policy
-  consent_date     DateTime? // When consent was granted
-  scheduled_delete DateTime? // Auto-deletion timestamp (last_login + 90 days)
+  consent_given      Boolean   @default(false) // User accepted privacy policy
+  consent_date       DateTime? // When consent was granted
+  consent_ip_address String? // IP address when consent given (hashed for privacy)
+  consent_method     String? // "modal", "settings", "api" - how consent was collected
+  consent_version    String?   @default("1.0") // Privacy policy version accepted
+  scheduled_delete   DateTime? // Auto-deletion timestamp (last_login + 90 days)
 
   // Relationships
   items InventoryItem[]
@@ -925,4 +930,49 @@ model PushSubscription {
   @@index([created_at]) // Age-based cleanup (remove >90 days old)
 
   @@map("push_subscriptions")
+}
+
+// ============================================================================
+// GDPR COMPLIANCE: Audit Log
+// ============================================================================
+
+// Audit log for GDPR compliance and security monitoring
+// BDD Reference: features/07-inventory-import.feature (lines 331-345)
+//   Scenario: Request consent before first import - audit log entry required
+//
+// Retention: 5 years minimum per GDPR best practices (2025)
+// Purpose: Tamper-proof evidence of consent, data access, modifications, deletions
+model AuditLog {
+  id String @id @default(uuid())
+
+  // Who performed the action
+  user_id String?
+  user    User?   @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  // What action was performed
+  action      String // "consent_given", "consent_withdrawn", "data_accessed", "data_deleted", "data_exported"
+  resource    String // "inventory", "user_profile", "loadout"
+  resource_id String? // ID of affected resource
+
+  // When and how
+  timestamp  DateTime @default(now())
+  ip_address String? // Hashed for privacy (SHA-256)
+  user_agent String? // Browser/client info
+
+  // Additional context (JSON)
+  metadata Json? // Version, method, additional details
+
+  // Compliance tracking
+  consent_version String? // Privacy policy version at time of action
+  processing_purpose String? // GDPR Article 6 lawful basis
+
+  // Timestamps
+  created_at DateTime @default(now())
+
+  // Indexes for querying
+  @@index([user_id, timestamp]) // User audit trail queries
+  @@index([action, timestamp]) // Action-based reporting
+  @@index([created_at]) // Retention policy cleanup (>5 years)
+
+  @@map("audit_logs")
 }
