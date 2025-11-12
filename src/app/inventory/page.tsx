@@ -125,7 +125,7 @@ export default async function InventoryPage() {
               Compare prices from Steam, CSFloat, Buff163, and more.
             </p>
 
-            <ImportButton />
+            <ImportButton consentGiven={false} />
 
             <p className="text-xs text-gray-500 mt-4">
               We'll fetch your public Steam inventory and calculate total value

@@ -16,17 +16,21 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { startInventoryImport, type ImportResult, type ImportProgress } from '@/actions/inventory'
+import { recordConsent } from '@/actions/consent'
+import ConsentModal from '@/components/ConsentModal'
 
 export interface ImportButtonProps {
   className?: string
+  consentGiven?: boolean
 }
 
-export default function ImportButton({ className }: ImportButtonProps) {
+export default function ImportButton({ className, consentGiven = false }: ImportButtonProps) {
   const [status, setStatus] = useState<'idle' | 'importing' | 'complete' | 'error'>('idle')
   const [message, setMessage] = useState<string>('')
   const [itemsImported, setItemsImported] = useState<number>(0)
   const [progress, setProgress] = useState<ImportProgress | null>(null)
   const [remainingTime, setRemainingTime] = useState<number>(0)
+  const [showConsentModal, setShowConsentModal] = useState<boolean>(false)
   const router = useRouter()
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -66,6 +70,12 @@ export default function ImportButton({ className }: ImportButtonProps) {
   }, [remainingTime])
 
   const handleImport = async () => {
+    // Check consent before importing
+    if (!consentGiven) {
+      setShowConsentModal(true)
+      return
+    }
+
     setStatus('importing')
     setMessage('Fetching inventory from Steam...')
     setProgress(null)
@@ -113,6 +123,26 @@ export default function ImportButton({ className }: ImportButtonProps) {
     pollProgress()
   }
 
+  const handleConsentAccept = async () => {
+    const result = await recordConsent()
+
+    if (result.success) {
+      setShowConsentModal(false)
+      // Refresh page to update consent status
+      router.refresh()
+      // Start import automatically after consent
+      handleImport()
+    } else {
+      setStatus('error')
+      setMessage(result.message)
+      setShowConsentModal(false)
+    }
+  }
+
+  const handleConsentDecline = () => {
+    setShowConsentModal(false)
+  }
+
   const isImporting = status === 'importing'
   const isComplete = status === 'complete'
   const isError = status === 'error'
@@ -140,14 +170,22 @@ export default function ImportButton({ className }: ImportButtonProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <button
-        onClick={handleImport}
-        disabled={isImporting || isRateLimited}
-        className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed ${className || ''}`}
-      >
-        Import Steam Inventory
-      </button>
+    <>
+      {/* GDPR Consent Modal */}
+      <ConsentModal
+        isOpen={showConsentModal}
+        onClose={handleConsentDecline}
+        onAccept={handleConsentAccept}
+      />
+
+      <div className="space-y-4">
+        <button
+          onClick={handleImport}
+          disabled={isImporting || isRateLimited}
+          className={`px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400 disabled:cursor-not-allowed ${className || ''}`}
+        >
+          Import Steam Inventory
+        </button>
 
       {/* Rate Limit Countdown */}
       {isRateLimited && (
@@ -214,6 +252,7 @@ export default function ImportButton({ className }: ImportButtonProps) {
           <p className="text-red-700 text-sm mt-1">{message}</p>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
