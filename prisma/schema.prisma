@@ -422,6 +422,10 @@ model UserInventory {
   import_status        String? @default("pending") // "pending", "in_progress", "completed", "failed"
   items_imported_count Int?    @default(0) // Progress tracker for partial imports
 
+  // Unmatched items tracking
+  // BDD: "Handle items not found in database" (lines 223-232)
+  items_unmatched_count Int? @default(0) // Items from Steam not found in csloadout.gg database
+
   // GDPR compliance
   // BDD: "Request consent before first import" (lines 331-345)
   // BDD: "Auto-delete stale inventories (90-day retention)"
