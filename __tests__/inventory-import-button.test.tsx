@@ -46,13 +46,38 @@ jest.mock('@/actions/inventory', () => ({
   retryInventoryImport: jest.fn()
 }))
 
+// Mock consent action
+const mockRecordConsent = jest.fn()
+jest.mock('@/actions/consent', () => ({
+  recordConsent: () => mockRecordConsent()
+}))
+
 describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
   let testUserId: string
+
+  // Helper function to accept consent modal
+  async function acceptConsentIfPresent() {
+    const acceptButton = screen.queryByRole('button', { name: /accept and import/i })
+    if (acceptButton) {
+      fireEvent.click(acceptButton)
+      // Wait for consent to be recorded and modal to close
+      await waitFor(() => {
+        expect(screen.queryByText(/privacy policy consent/i)).not.toBeInTheDocument()
+      })
+    }
+  }
 
   beforeEach(async () => {
     // Reset mocks
     mockRefresh.mockClear()
     mockStartImport.mockClear()
+    mockRecordConsent.mockClear()
+
+    // Mock successful consent recording by default
+    mockRecordConsent.mockResolvedValue({
+      success: true,
+      message: 'Consent recorded successfully'
+    })
 
     // Clean up test data
     await prisma.inventoryItem.deleteMany({})
@@ -118,6 +143,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
 
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
+
     await waitFor(() => {
       expect(screen.getByText(/fetching inventory from steam/i)).toBeInTheDocument()
     })
@@ -135,6 +163,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
 
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
+
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
 
     await waitFor(() => {
       // Should show loading spinner or progress indicator
@@ -156,6 +187,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
 
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
+
     await waitFor(() => {
       expect(importButton).toBeDisabled()
     })
@@ -174,6 +208,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
 
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
+
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
 
     await waitFor(() => {
       expect(screen.getByText(/import complete/i)).toBeInTheDocument()
@@ -194,6 +231,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
 
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
+
     await waitFor(() => {
       expect(screen.getByText(/247 items imported/i)).toBeInTheDocument()
     })
@@ -213,6 +253,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
 
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
+
     await waitFor(() => {
       expect(mockRefresh).toHaveBeenCalled()
     })
@@ -230,6 +273,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
 
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
+
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
 
     await waitFor(() => {
       expect(screen.getByText(/failed to fetch inventory/i)).toBeInTheDocument()
@@ -249,6 +295,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
 
     const importButton = screen.getByRole('button', { name: /import steam inventory/i })
     fireEvent.click(importButton)
+
+    // Accept consent if modal appears
+    await acceptConsentIfPresent()
 
     // Wait for completion
     await waitFor(() => {

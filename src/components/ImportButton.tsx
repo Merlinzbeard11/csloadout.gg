@@ -24,13 +24,14 @@ export interface ImportButtonProps {
   consentGiven?: boolean
 }
 
-export default function ImportButton({ className, consentGiven = false }: ImportButtonProps) {
+export default function ImportButton({ className, consentGiven = true }: ImportButtonProps) {
   const [status, setStatus] = useState<'idle' | 'importing' | 'complete' | 'error'>('idle')
   const [message, setMessage] = useState<string>('')
   const [itemsImported, setItemsImported] = useState<number>(0)
   const [progress, setProgress] = useState<ImportProgress | null>(null)
   const [remainingTime, setRemainingTime] = useState<number>(0)
   const [showConsentModal, setShowConsentModal] = useState<boolean>(false)
+  const [hasConsent, setHasConsent] = useState<boolean>(consentGiven)
   const router = useRouter()
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -69,13 +70,8 @@ export default function ImportButton({ className, consentGiven = false }: Import
     }
   }, [remainingTime])
 
-  const handleImport = async () => {
-    // Check consent before importing
-    if (!consentGiven) {
-      setShowConsentModal(true)
-      return
-    }
-
+  // Extracted polling logic to avoid duplication
+  const startImportPolling = () => {
     setStatus('importing')
     setMessage('Fetching inventory from Steam...')
     setProgress(null)
@@ -123,15 +119,27 @@ export default function ImportButton({ className, consentGiven = false }: Import
     pollProgress()
   }
 
+  const handleImport = async () => {
+    // Check consent before importing
+    if (!hasConsent) {
+      setShowConsentModal(true)
+      return
+    }
+
+    startImportPolling()
+  }
+
   const handleConsentAccept = async () => {
     const result = await recordConsent()
 
     if (result.success) {
+      setHasConsent(true)
       setShowConsentModal(false)
-      // Refresh page to update consent status
+      // Refresh page to update consent status in database
       router.refresh()
+
       // Start import automatically after consent
-      handleImport()
+      startImportPolling()
     } else {
       setStatus('error')
       setMessage(result.message)
