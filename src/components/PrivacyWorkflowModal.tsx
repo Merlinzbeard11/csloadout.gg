@@ -191,12 +191,68 @@ export default function PrivacyWorkflowModal({
             </button>
 
             {showHelp && (
-              <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
-                <p className="text-sm text-gray-700">
-                  Steam privacy settings control who can view your profile information, including your inventory.
-                  By default, some Steam accounts have private inventories to protect user privacy.
-                  Making your inventory public allows csloadout.gg to fetch your items and calculate their value.
-                </p>
+              <div className="px-4 py-4 border-t border-gray-200 bg-gray-50 space-y-4">
+                {/* Topic 1: Default Steam Privacy */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-1">Default Steam Privacy</h4>
+                  <p className="text-sm text-gray-700">
+                    Steam sets inventories to public by default for new accounts. However, you may have changed
+                    this setting, or your account may have been created with different defaults.
+                  </p>
+                </div>
+
+                {/* Topic 2: Security Benefits */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-1">Security Benefits</h4>
+                  <p className="text-sm text-gray-700">
+                    Private inventories prevent scammers from targeting you based on your valuable items.
+                    This is a legitimate security measure Steam provides.
+                  </p>
+                </div>
+
+                {/* Topic 3: csloadout.gg Data Access */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-1">csloadout.gg Data Access</h4>
+                  <p className="text-sm text-gray-700">
+                    We only read public data - we never access private items. When your inventory is private,
+                    Steam blocks all access completely.
+                  </p>
+                </div>
+
+                {/* Topic 4: What We Can See */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-1">What We Can See</h4>
+                  <p className="text-sm text-gray-700">
+                    Item names, quantities, wear values - same as Steam Community pages. We can only see
+                    what's publicly visible on your Steam profile.
+                  </p>
+                </div>
+
+                {/* Topic 5: What We Can't See */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-1">What We Can't See</h4>
+                  <p className="text-sm text-gray-700">
+                    Nothing when private - Steam blocks all access. We cannot see your items, trade history,
+                    or any inventory data when privacy is enabled.
+                  </p>
+                </div>
+
+                {/* Topic 6: Data Security */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-1">Data Security</h4>
+                  <p className="text-sm text-gray-700">
+                    We encrypt all data and never share with third parties. Your inventory data is stored
+                    securely and only used for price comparison.
+                  </p>
+                </div>
+
+                {/* Reassurance Statement */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
+                  <p className="text-sm text-blue-900">
+                    <strong>Making your inventory public is safe.</strong> Millions of Steam users have public inventories.
+                    You can change it back to private anytime in Steam settings.
+                  </p>
+                </div>
               </div>
             )}
           </div>
