@@ -319,6 +319,15 @@ export default async function InventoryPage() {
                   {/* Item Name */}
                   <h3 className="text-sm font-semibold text-gray-900 mb-1">{item.display_name}</h3>
 
+                  {/* Custom Name Tag */}
+                  {inventoryItem.custom_name && (
+                    <div className="mb-2 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded px-2 py-1" data-testid="custom-name-section">
+                      <p className="text-xs font-semibold text-yellow-900">
+                        Custom Name: <span className="text-orange-700">{inventoryItem.custom_name}</span>
+                      </p>
+                    </div>
+                  )}
+
                   {/* Wear Condition */}
                   {inventoryItem.wear && (
                     <p className="text-xs text-gray-600 mb-1">{formatWear(inventoryItem.wear)}</p>
