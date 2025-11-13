@@ -64,7 +64,7 @@ async function getWeaponItems(weaponType: string): Promise<WeaponItemsResponse |
     const decodedWeaponType = decodeURIComponent(weaponType);
     const normalizedWeaponType = decodedWeaponType.toUpperCase();
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const res = await fetch(`${baseUrl}/api/weapons/${encodeURIComponent(normalizedWeaponType)}/items`, {
       next: { revalidate: 3600 }, // Revalidate every 1 hour
     });

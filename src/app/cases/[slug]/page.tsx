@@ -62,7 +62,10 @@ const POPULAR_CASES = [
 
 async function getCaseDetail(slug: string): Promise<CaseDetailResponse | null> {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    // Server Component - use NEXTAUTH_URL (server-side only, more secure)
+    const baseUrl = process.env.NEXTAUTH_URL ||
+                    process.env.NEXT_PUBLIC_APP_URL ||
+                    'http://localhost:3000';
     const res = await fetch(`${baseUrl}/api/cases/${slug}`, {
       next: { revalidate: 3600 }, // Revalidate every 1 hour
     });
