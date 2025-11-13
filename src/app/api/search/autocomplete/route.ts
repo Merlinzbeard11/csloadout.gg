@@ -61,6 +61,9 @@ import { prisma } from '@/lib/prisma';
 import type { AutocompleteResponse, AutocompleteSuggestion } from '@/types/search';
 import { SEARCH_DEFAULTS } from '@/types/search';
 
+// Force dynamic rendering (uses request.url which requires dynamic mode)
+export const dynamic = 'force-dynamic';
+
 // Suggestion limits (Gotcha #4: Industry best practice)
 const MAX_SUGGESTIONS = {
   desktop: 10,

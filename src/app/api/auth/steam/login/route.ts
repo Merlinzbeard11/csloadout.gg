@@ -20,6 +20,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SteamOpenIDProvider } from '@/lib/steam/steam-openid-provider';
 import { randomBytes } from 'crypto';
 
+// Force dynamic rendering (uses request.url and cookies which require dynamic mode)
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Get callback URL and realm from environment

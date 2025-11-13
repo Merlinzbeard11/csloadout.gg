@@ -37,6 +37,9 @@ import { prisma } from '@/lib/prisma';
 import type { AggregatedPrices, PriceData } from '@/types/price';
 import { fromDatabase, calculateSavings, sortByTotalCost } from '@/types/price';
 
+// Force dynamic rendering (uses dynamic route parameters which require dynamic mode)
+export const dynamic = 'force-dynamic';
+
 // UUID validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

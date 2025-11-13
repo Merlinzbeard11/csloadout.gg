@@ -34,6 +34,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+// Force dynamic rendering (uses request.url which requires dynamic mode)
+export const dynamic = 'force-dynamic';
+
 // Rarity sort order mapping (highest to lowest)
 const RARITY_SORT_ORDER: Record<string, number> = {
   contraband: 1,

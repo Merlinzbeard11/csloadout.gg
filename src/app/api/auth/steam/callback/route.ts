@@ -27,6 +27,9 @@ import { SteamOpenIDProvider } from '@/lib/steam/steam-openid-provider';
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
 
+// Force dynamic rendering (uses request.url and cookies which require dynamic mode)
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

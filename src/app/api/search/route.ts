@@ -80,6 +80,9 @@ import { prisma } from '@/lib/prisma';
 import type { SearchResponse, SearchFilters, SearchFacets, Rarity, Wear } from '@/types/search';
 import { SEARCH_DEFAULTS, SEARCH_LIMITS } from '@/types/search';
 
+// Force dynamic rendering (uses request.url which requires dynamic mode)
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const startTime = performance.now();
 
