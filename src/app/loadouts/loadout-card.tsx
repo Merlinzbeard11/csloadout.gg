@@ -118,13 +118,19 @@ export function LoadoutCard({ loadout }: LoadoutCardProps) {
 
         {/* Creator */}
         <div className="flex items-center gap-2 border-t border-gray-100 pt-3">
-          <Image
-            src={loadout.creatorAvatar}
-            alt={loadout.creatorName}
-            width={24}
-            height={24}
-            className="rounded-full"
-          />
+          {loadout.creatorAvatar && loadout.creatorAvatar.startsWith('http') ? (
+            <Image
+              src={loadout.creatorAvatar}
+              alt={loadout.creatorName}
+              width={24}
+              height={24}
+              className="rounded-full"
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs font-medium text-gray-600">
+              {loadout.creatorName.charAt(0).toUpperCase()}
+            </div>
+          )}
           <span className="text-sm text-gray-600">{loadout.creatorName}</span>
         </div>
       </div>
