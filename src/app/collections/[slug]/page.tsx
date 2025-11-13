@@ -23,6 +23,9 @@ import { Breadcrumb } from '@/components/breadcrumb';
 import { ItemCard } from '@/components/item-card';
 import { CollectionSkeleton } from '@/components/collection-skeleton';
 
+// Force dynamic rendering (fetches from API with dynamic route parameter)
+export const dynamic = 'force-dynamic';
+
 interface CollectionItem {
   id: string;
   name: string;

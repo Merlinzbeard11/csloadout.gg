@@ -19,6 +19,9 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import ItemCard from '@/components/ItemCard';
 
+// Force dynamic rendering (fetches from API with dynamic route parameter)
+export const dynamic = 'force-dynamic';
+
 interface CaseItem {
   id: string;
   name: string;

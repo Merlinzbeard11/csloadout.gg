@@ -15,6 +15,9 @@
 import { Metadata } from 'next';
 import CollectionCard, { Collection } from '@/components/CollectionCard';
 
+// Force dynamic rendering (fetches from API during render)
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'CS2 Collections - Browse All Skin Collections | csloadout.gg',
   description:

@@ -23,6 +23,9 @@ import { SearchBox } from '@/components/search-box';
 import { Pagination } from '@/components/pagination';
 import Link from 'next/link';
 
+// Force dynamic rendering (fetches from API with cache: 'no-store')
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Browse CS2 Items | csloadout.gg',
   description: 'Browse and search Counter-Strike 2 items including skins, stickers, agents, and more with fuzzy matching.',
