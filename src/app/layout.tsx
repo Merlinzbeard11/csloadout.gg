@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { HeaderNav } from "@/components/header-nav";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-cs2-dark text-cs2-light">
+        <HeaderNav />
         <main className="flex-1">{children}</main>
 
         {/* Legal compliance footer - BDD requirement from features/01-item-database.feature:82-87 */}
