@@ -40,21 +40,37 @@ export async function GET(request: NextRequest) {
       params[key] = value;
     });
 
+    // Initialize base URL first (needed for redirects)
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
     // Handle user cancellation
     if (params['openid.mode'] === 'cancel') {
-      const cancelUrl = new URL('/auth/signin', process.env.NEXTAUTH_URL || 'http://localhost:3000');
+      const cancelUrl = new URL('/auth/signin', baseUrl);
       cancelUrl.searchParams.set('error', 'Cancelled');
       return NextResponse.redirect(cancelUrl);
     }
 
     // Verify CSRF state token
     const expectedState = request.cookies.get('steam_auth_state')?.value;
+
+    // Check if user already has a valid session (might be a double-request after successful auth)
+    const existingSessionToken = request.cookies.get('session_token')?.value;
+    if (!expectedState && existingSessionToken) {
+      console.log('[Steam Callback] CSRF cookie missing but session exists - likely double-request after successful auth');
+      console.log('[Steam Callback] Redirecting to homepage with existing session');
+      // User already authenticated, redirect to homepage
+      return NextResponse.redirect(new URL('/', baseUrl));
+    }
+
     if (!expectedState) {
-      throw new Error('Missing CSRF state token');
+      console.error('[Steam Callback] Missing CSRF state cookie and no existing session');
+      console.error('[Steam Callback] Available cookies:', request.cookies.getAll().map(c => c.name));
+      // If CSRF token is missing and no session, likely expired (5 min timeout)
+      // Redirect to sign-in page to start fresh
+      return NextResponse.redirect(new URL('/auth/signin?error=expired', baseUrl));
     }
 
     // Initialize Steam OpenID provider
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const callbackUrl = `${baseUrl}/api/auth/steam/callback`;
     const realm = baseUrl;
     const provider = new SteamOpenIDProvider(callbackUrl, realm);
@@ -127,8 +143,10 @@ export async function GET(request: NextRequest) {
     // we need server-side redirect since there's no client JavaScript running.
     // The cookie is set in the response headers before the redirect.
     const redirectUrl = new URL('/', baseUrl);
+    console.log('[Steam Callback] Creating redirect response to:', redirectUrl.toString());
     const response = NextResponse.redirect(redirectUrl);
 
+    console.log('[Steam Callback] Setting session cookie');
     response.cookies.set('session_token', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -138,8 +156,10 @@ export async function GET(request: NextRequest) {
     });
 
     // Clear CSRF state cookie
+    console.log('[Steam Callback] Clearing CSRF cookie');
     response.cookies.delete('steam_auth_state');
 
+    console.log('[Steam Callback] Returning redirect response');
     return response;
   } catch (error) {
     console.error('[API /auth/steam/callback] Error:', error);
