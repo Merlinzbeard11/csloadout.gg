@@ -60,11 +60,21 @@ export async function GET(request: NextRequest) {
     const provider = new SteamOpenIDProvider(callbackUrl, realm);
 
     // Verify OpenID assertion and extract SteamID
+    console.log('[Steam Callback] Verifying with expectedState:', expectedState ? 'present' : 'missing');
+    console.log('[Steam Callback] OpenID params:', {
+      mode: params['openid.mode'],
+      claimed_id: params['openid.claimed_id'],
+      identity: params['openid.identity']
+    });
+
     const result = await provider.verifyCallback(params, expectedState);
 
     if (!result.verified || !result.steamId) {
+      console.error('[Steam Callback] Verification failed:', result);
       throw new Error('OpenID verification failed');
     }
+
+    console.log('[Steam Callback] Verification successful, SteamID:', result.steamId);
 
     const steamId = result.steamId;
 
@@ -112,12 +122,12 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Set session cookie
-    // Gotcha 6c8a668c: Return JSON response instead of immediate redirect
-    const response = NextResponse.json({
-      success: true,
-      redirectTo: '/', // Redirect to homepage after successful auth
-    });
+    // Set session cookie and redirect
+    // Note: Gotcha 6c8a668c mentions cookie race conditions, but for OAuth callback
+    // we need server-side redirect since there's no client JavaScript running.
+    // The cookie is set in the response headers before the redirect.
+    const redirectUrl = new URL('/', baseUrl);
+    const response = NextResponse.redirect(redirectUrl);
 
     response.cookies.set('session_token', sessionToken, {
       httpOnly: true,
