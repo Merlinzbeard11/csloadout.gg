@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { HeaderNav } from "@/components/header-nav";
+import { getSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
@@ -8,15 +9,17 @@ export const metadata: Metadata = {
   description: "Browse 7,000+ CS2 items and compare prices across marketplaces",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getSession();
+
   return (
     <html lang="en">
       <body className="min-h-screen flex flex-col bg-cs2-dark text-cs2-light">
-        <HeaderNav />
+        <HeaderNav session={session} />
         <main className="flex-1">{children}</main>
 
         {/* Legal compliance footer - BDD requirement from features/01-item-database.feature:82-87 */}

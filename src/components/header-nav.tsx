@@ -1,13 +1,19 @@
 "use client"
 
+import React, { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, Search, User, ShoppingBag } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { UserMenu } from "@/components/user-menu"
 import { cn } from "@/lib/utils"
+import type { Session } from "@/lib/auth/session"
 
-export function HeaderNav() {
+interface HeaderNavProps {
+  session: Session | null;
+}
+
+export function HeaderNav({ session }: HeaderNavProps) {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -64,16 +70,24 @@ export function HeaderNav() {
             </Button>
 
             {/* User/Auth */}
-            <Link href="/auth/signin">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-cs2-light hover:text-white hover:bg-cs2-blue/10"
-                aria-label="Sign in"
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
+            {session ? (
+              <UserMenu
+                personaName={session.user.personaName}
+                avatar={session.user.avatar}
+                steamId={session.user.steamId}
+              />
+            ) : (
+              <Link href="/auth/signin">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-cs2-light hover:text-white hover:bg-cs2-blue/10"
+                  aria-label="Sign in"
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
+            )}
 
             {/* Mobile menu toggle */}
             <Button
