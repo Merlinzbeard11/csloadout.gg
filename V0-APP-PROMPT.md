@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-This document contains copy-paste ready v0.app prompts for **actually implemented** pages in csloadout.gg Phase 1.
+This document contains **self-contained, copy-paste ready** v0.app prompts for csloadout.gg Phase 1.
 
 **What's Included:** Features 1-9 (Item Database, Browsing, Search, Price Comparison, Fees, Steam Auth, Inventory Import, Loadout Builder, Price Alerts Phase 1)
 
@@ -10,68 +10,42 @@ This document contains copy-paste ready v0.app prompts for **actually implemente
 
 **Status:** Phase 1 is ~90% functionally complete. These prompts reflect the actual implementation.
 
----
-
-## 🎨 Global Design System
-
-**Use this design system across ALL prompts below:**
-
-### Tech Stack
-- **Framework:** Next.js 14 with App Router
-- **Language:** TypeScript
-- **UI Components:** shadcn/ui (Radix UI primitives)
-- **Styling:** Tailwind CSS
-- **Icons:** Lucide React
-- **State:** React Query (TanStack Query) for server state
-- **Forms:** React Hook Form + Zod validation
-
-### Color Palette
-```css
-/* CS2 Theme Colors (Tailwind config) */
---cs2-orange: #FF6A00;     /* Primary CTAs, highlights */
---cs2-darker: #0A0E1A;     /* Page backgrounds */
---cs2-dark: #141B2E;       /* Card backgrounds */
---cs2-blue: #3B82F6;       /* Accents, borders */
---cs2-light: #E2E8F0;      /* Primary text */
-
-/* Semantic Colors */
---success: #22C55E;        /* Price drops, good deals */
---danger: #EF4444;         /* Price increases, alerts */
---warning: #F59E0B;        /* Warnings, cautions */
-```
-
-### Typography
-- **Headings:** System font stack (Inter fallback)
-- **Body:** System font stack for performance
-- **Monospace:** For prices and numbers
-
-### Component Patterns
-- **Cards:** `bg-cs2-dark border border-cs2-blue/20 rounded-lg`
-- **Buttons:** `bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg`
-- **Inputs:** `bg-cs2-dark border border-cs2-blue/20 focus:border-cs2-blue`
-- **Hover States:** `hover:border-cs2-blue/50 transition-colors`
-
-### Rarity Colors
-```typescript
-const RARITY_COLORS = {
-  consumer: 'text-gray-400',
-  industrial: 'text-blue-400',
-  milspec: 'text-blue-500',
-  restricted: 'text-purple-500',
-  classified: 'text-pink-500',
-  covert: 'text-red-500',
-  contraband: 'text-yellow-500',
-};
-```
+**How to Use:**
+1. Find the prompt you need below
+2. Copy the ENTIRE prompt (starting with ``` and ending with ```)
+3. Paste directly into v0.app
+4. No need to copy multiple sections - each prompt is complete!
 
 ---
 
-## 📄 Page-by-Page v0.app Prompts
+## 📄 Self-Contained v0.app Prompts
+
+Each prompt below includes the global design system, so you only need to copy ONE block per page.
 
 ### **Prompt 1: Home Page (Landing)**
 
 ```
 Build the landing/home page for csloadout.gg - a CS2 marketplace aggregator platform.
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
 
 PAGE REQUIREMENTS:
 - Hero section with value proposition
@@ -115,12 +89,6 @@ DESIGN:
 - Hover: Cards lift with shadow increase
 - Buttons: CS2 orange primary, blue secondary
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Tailwind CSS
-- Lucide React icons
-- Link components from Next.js
-
 Generate the complete landing page with hero, features, and responsive layout.
 ```
 
@@ -129,7 +97,45 @@ Generate the complete landing page with hero, features, and responsive layout.
 ### **Prompt 2: Items Browse Page (/items)**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the item catalog browse page for csloadout.gg - the main interface for browsing CS2 items.
+
+CRITICAL ARCHITECTURE:
+- Main page MUST be Server Component (async function, NO 'use client')
+- Fetch data with async/await directly in Server Component
+- SearchBox is separate Client Component ('use client')
+- Use searchParams prop for URL parameters (Next.js App Router pattern)
+- NO useState, NO useEffect for data fetching in main page
+- This prevents "uncached promise" Suspense errors
 
 PAGE REQUIREMENTS:
 - Search bar at top for fuzzy search
@@ -138,18 +144,104 @@ PAGE REQUIREMENTS:
 - URL-based pagination and search
 - Loading and error states
 
+SERVER COMPONENT PATTERN (REQUIRED):
+
+// FOR V0.APP PREVIEW: Use mock data
+const MOCK_ITEMS: Item[] = [
+  {
+    id: "1",
+    name: "AWP | Dragon Lore",
+    display_name: "AWP | Dragon Lore",
+    rarity: "covert",
+    type: "skin",
+    image_url: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot621FAR17PLfYQJD_9W7m5a0mvLwOq7c2D0DscQj2LuVpIihiQzhqRE_YzqhLNDGdgI_aV3TqFjqkue915-1tM_PmnJhuSM8pSGKexwB5I4/360fx360f",
+    image_url_fallback: null
+  },
+  {
+    id: "2",
+    name: "AK-47 | Case Hardened",
+    display_name: "AK-47 | Case Hardened",
+    rarity: "classified",
+    type: "skin",
+    image_url: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot7HxfDhjxszJemkV09-5lpKKqPrxN7LEmyVQ7MEpiLuSrYmnjQO3-UdsZGvyd4_Bd1RvNQ7T_1K9wrq5gJDu7pXXiSw0QBEsQ_Y/360fx360f",
+    image_url_fallback: null
+  },
+  {
+    id: "3",
+    name: "M4A4 | Howl",
+    display_name: "M4A4 | Howl",
+    rarity: "contraband",
+    type: "skin",
+    image_url: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpou-6kejhz2v_Nfz5H_uO1gb-Gw_alIITZk2pH8Yt2j7GQo9_w0Azg_RVuMjugI9STdVA_NV3U_AXqyL--jJa7upvBwSBj7z5iuyhQ5ZR2BA/360fx360f",
+    image_url_fallback: null
+  },
+  {
+    id: "4",
+    name: "Karambit | Fade",
+    display_name: "★ Karambit | Fade",
+    rarity: "covert",
+    type: "knife",
+    image_url: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpovbSsLQJf2PLacDBA5ciJlY20k_jkI7fUhFRB4MRij7qQpImj2Vfh_Es5ZWn3IoTDIwI2ZF6B-lHqwLjvhJC7vJ6dzSdq6SdwsH3UgVXp1mnTT3pC/360fx360f",
+    image_url_fallback: null
+  },
+  {
+    id: "5",
+    name: "Glock-18 | Fade",
+    display_name: "Glock-18 | Fade",
+    rarity: "restricted",
+    type: "skin",
+    image_url: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgposbaqKAxf0Ob3djFN79eJmYGZnvnLP7LWnn8f7pQpiL6S8Nij3FK1_Us9Mm-gI4SSdAY7Yw7W_Aa6lb27hZLo7pXByXdivD5iuygw7-E9hw/360fx360f",
+    image_url_fallback: null
+  }
+];
+
+export default async function ItemsPage({
+  searchParams
+}: {
+  searchParams: { page?: string; q?: string }
+}) {
+  const page = Number(searchParams.page) || 1;
+  const query = searchParams.q || '';
+
+  // FOR V0.APP: Use mock data
+  // FOR PRODUCTION: Replace with real API fetch
+  const data: ItemsResponse = {
+    items: MOCK_ITEMS,
+    total: 5,
+    page: page,
+    pageSize: 50,
+    totalPages: 1
+  };
+
+  // FOR PRODUCTION: Uncomment this and remove mock data above
+  // const res = await fetch(`/api/items?page=${page}&pageSize=50&q=${query}`, {
+  //   cache: 'no-store'
+  // });
+  // if (!res.ok) return <ErrorState />;
+  // const data: ItemsResponse = await res.json();
+
+  return (
+    <div>
+      <SearchBox defaultValue={query} />
+      <ItemGrid items={data.items} />
+      <Pagination currentPage={page} totalPages={data.totalPages} />
+    </div>
+  );
+}
+
 HEADER SECTION:
 - Page title: "Browse CS2 Items" or "Search CS2 Items" (if searching)
 - Result count: "Showing 1-50 of 10,234 items" (dynamic based on pagination)
 - If search: "Search results for 'ak-47' - 42 items found" (dynamic query and count)
 
-SEARCH BOX:
+SEARCH BOX (Separate Client Component):
+- File: SearchBox.tsx with 'use client' directive
 - Input field: "Search items..." placeholder
 - Magnifying glass icon (Lucide Search)
 - Real-time search as user types (debounced 300ms)
 - Clear button (X) when text entered
-- Updates URL with ?q=query parameter
-- Client component (use client)
+- Uses useRouter() to update URL with ?q=query parameter
+- Props: defaultValue (controlled from searchParams)
 
 ITEM GRID:
 - Responsive grid:
@@ -170,7 +262,7 @@ PAGINATION CONTROLS:
 - Next button (disabled if last page)
 - Buttons: bg-cs2-dark with border
 - Current page: bg-cs2-blue highlight
-- URL-based: ?page=X&pageSize=50
+- Uses Link components to update ?page=X&pageSize=50
 
 ERROR STATE:
 - Red alert box: "Failed to load items. Please try again."
@@ -181,7 +273,8 @@ EMPTY STATE:
 - Message: "No items found."
 - Suggestion to try different search
 
-LOADING STATE (Optional):
+LOADING STATE:
+- Use loading.tsx file in app/items/ directory
 - Skeleton cards with pulse animation
 - 10 skeleton placeholders
 
@@ -204,18 +297,8 @@ interface ItemsResponse {
   totalPages: number;
 }
 
-TECH STACK:
-- Next.js 14 App Router with TypeScript
-- React Server Component for page
-- Client component for SearchBox
-- Tailwind CSS
-- Lucide icons
+Generate the complete items browse page using Server Component pattern with async/await.
 
-API ENDPOINT:
-- GET /api/items?page=1&pageSize=50&q=search
-- Returns ItemsResponse JSON
-
-Generate the complete items browse page with search, grid, and pagination.
 ```
 
 ---
@@ -223,6 +306,36 @@ Generate the complete items browse page with search, grid, and pagination.
 ### **Prompt 3: Item Card Component**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build a reusable ItemCard component for csloadout.gg - displays individual CS2 items in grid layouts.
 
 COMPONENT REQUIREMENTS:
@@ -285,14 +398,8 @@ CRITICAL GOTCHA:
 - MUST implement multi-source fallback
 - Don't crash on broken images
 
-TECH STACK:
-- React with TypeScript
-- 'use client' directive (client component)
-- next/link for navigation
-- next/image OR <img> tag with lazy loading
-- Tailwind CSS
-
 Generate the complete ItemCard component with fallback logic and rarity colors.
+
 ```
 
 ---
@@ -300,6 +407,36 @@ Generate the complete ItemCard component with fallback logic and rarity colors.
 ### **Prompt 4: Collections Page (/collections)**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the collections browse page for csloadout.gg - displays CS2 item collections (e.g., "The Huntsman Collection").
 
 PAGE REQUIREMENTS:
@@ -357,17 +494,8 @@ ERROR STATE:
 EMPTY STATE:
 - "No collections found."
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Server Component
-- Tailwind CSS
-- Links from next/link
-
-API ENDPOINT:
-- GET /api/collections
-- Returns { collections: Collection[] }
-
 Generate the complete collections browse page with grid layout and cards.
+
 ```
 
 ---
@@ -375,6 +503,36 @@ Generate the complete collections browse page with grid layout and cards.
 ### **Prompt 5: Collection Detail Page (/collections/[slug])**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the collection detail page for csloadout.gg - shows all items within a specific CS2 collection.
 
 PAGE REQUIREMENTS:
@@ -422,18 +580,8 @@ interface CollectionDetail {
   items: Item[]; // Array of Item objects
 }
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Server Component
-- Dynamic route: [slug]
-- Tailwind CSS
-- Reuse ItemCard component
-
-API ENDPOINT:
-- GET /api/collections/[slug]
-- Returns CollectionDetail JSON
-
 Generate the complete collection detail page with header, breadcrumb, and item grid.
+
 ```
 
 ---
@@ -441,6 +589,36 @@ Generate the complete collection detail page with header, breadcrumb, and item g
 ### **Prompt 6: Price Comparison Table Component**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build a PriceComparisonTable component for csloadout.gg - displays prices from multiple marketplaces for a single item.
 
 COMPONENT REQUIREMENTS:
@@ -528,14 +706,8 @@ interface PriceComparisonTableProps {
   itemName: string;
 }
 
-TECH STACK:
-- React with TypeScript
-- TanStack Table for sorting (or simple useState)
-- Tailwind CSS
-- Lucide icons for sort/info
-- shadcn/ui Tooltip component
-
 Generate the complete PriceComparisonTable with sorting and responsive design.
+
 ```
 
 ---
@@ -543,6 +715,36 @@ Generate the complete PriceComparisonTable with sorting and responsive design.
 ### **Prompt 7: Fee Breakdown Component**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build a FeeBreakdown component for csloadout.gg - displays transparent fee breakdown for marketplace purchases.
 
 COMPONENT REQUIREMENTS:
@@ -601,14 +803,8 @@ interface FeeBreakdownProps {
   marketplace: string;
 }
 
-TECH STACK:
-- React with TypeScript
-- 'use client' (client component)
-- shadcn/ui Accordion component
-- Tailwind CSS for bar chart
-- Lucide ChevronDown icon
-
 Generate the complete FeeBreakdown component with visual breakdown and accordion.
+
 ```
 
 ---
@@ -616,6 +812,36 @@ Generate the complete FeeBreakdown component with visual breakdown and accordion
 ### **Prompt 8: Inventory Page (/inventory)**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the inventory import page for csloadout.gg - allows users to import and view their Steam CS2 inventory.
 
 PAGE REQUIREMENTS:
@@ -690,18 +916,8 @@ interface InventoryStats {
   mostValuable: InventoryItem;
 }
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Server Component for page
-- Client component for InventoryImportButton
-- Tailwind CSS
-- shadcn/ui Progress component
-
-API ENDPOINTS:
-- POST /api/inventory/import (trigger import)
-- GET /api/inventory (fetch inventory)
-
 Generate the complete inventory page with import, grid, and stats dashboard.
+
 ```
 
 ---
@@ -709,6 +925,36 @@ Generate the complete inventory page with import, grid, and stats dashboard.
 ### **Prompt 9: Loadout Builder Page (/loadouts/new)**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the budget loadout builder page for csloadout.gg - lets users create price-constrained weapon loadouts.
 
 PAGE REQUIREMENTS:
@@ -795,19 +1041,8 @@ interface Loadout {
   isPublic: boolean;
 }
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Client components (use client)
-- react-hook-form for budget input
-- shadcn/ui Dialog for modals
-- Tailwind CSS
-- Lucide icons
-
-API ENDPOINTS:
-- POST /api/loadouts (save loadout)
-- GET /api/items?slot=primary&maxPrice=12.50 (filtered items)
-
 Generate the complete loadout builder with budget tracker, slots, and item picker.
+
 ```
 
 ---
@@ -815,6 +1050,36 @@ Generate the complete loadout builder with budget tracker, slots, and item picke
 ### **Prompt 10: Loadouts Gallery Page (/loadouts)**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the public loadouts gallery for csloadout.gg - showcases community-created weapon loadouts.
 
 PAGE REQUIREMENTS:
@@ -898,18 +1163,8 @@ interface PublicLoadout {
   createdAt: string;
 }
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Server Component for page
-- Client component for upvote button
-- Tailwind CSS
-- Lucide icons
-- shadcn/ui Select for filters
-
-API ENDPOINT:
-- GET /api/loadouts?public=true&budget=100-500&sort=popular
-
 Generate the complete loadouts gallery with filters, cards, and upvote functionality.
+
 ```
 
 ---
@@ -917,6 +1172,36 @@ Generate the complete loadouts gallery with filters, cards, and upvote functiona
 ### **Prompt 11: Loadout Detail Page (/loadouts/[id])**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the loadout detail page for csloadout.gg - shows comprehensive view of a single weapon loadout.
 
 PAGE REQUIREMENTS:
@@ -996,19 +1281,8 @@ interface LoadoutDetail {
   createdAt: string;
 }
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Server Component for page
-- Client components for upvote/share
-- shadcn/ui Dialog for share modal
-- Tailwind CSS
-- Lucide icons
-
-API ENDPOINT:
-- GET /api/loadouts/[id]
-- POST /api/loadouts/[id]/upvote (toggle upvote)
-
 Generate the complete loadout detail page with slots, stats, and sharing.
+
 ```
 
 ---
@@ -1016,6 +1290,36 @@ Generate the complete loadout detail page with slots, stats, and sharing.
 ### **Prompt 12: Steam Sign In Page (/auth/signin)**
 
 ```
+
+TECH STACK:
+- Next.js 14 with App Router
+- TypeScript  
+- shadcn/ui components (Radix UI primitives)
+- Tailwind CSS
+- Lucide React icons
+
+DESIGN SYSTEM:
+Colors:
+- cs2-orange: #FF6A00 (primary CTAs)
+- cs2-darker: #0A0E1A (page backgrounds)
+- cs2-dark: #141B2E (card backgrounds)
+- cs2-blue: #3B82F6 (accents, borders)
+- cs2-light: #E2E8F0 (text)
+
+Component Patterns:
+- Cards: bg-cs2-dark border border-cs2-blue/20 rounded-lg
+- Buttons: bg-cs2-blue hover:bg-cs2-blue/80 px-4 py-2 rounded-lg
+- Hover: border-cs2-blue/50 transition-colors
+
+Rarity Colors:
+- consumer: text-gray-400
+- industrial: text-blue-400
+- milspec: text-blue-500
+- restricted: text-purple-500
+- classified: text-pink-500
+- covert: text-red-500
+- contraband: text-yellow-500
+
 Build the Steam authentication sign-in page for csloadout.gg.
 
 PAGE REQUIREMENTS:
@@ -1074,14 +1378,8 @@ ERROR STATE (Optional):
   - "Authentication failed. Please try again."
   - Dismiss button
 
-TECH STACK:
-- Next.js 14 with TypeScript
-- Simple page component
-- Tailwind CSS
-- Lucide icons
-- Link from next/link
-
 Generate the complete Steam sign-in page with benefits and guest option.
+
 ```
 
 ---
