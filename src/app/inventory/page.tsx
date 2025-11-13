@@ -52,8 +52,10 @@ export default async function InventoryPage() {
   let savingsPercentage = 0
 
   if (inventory && inventory.items.length > 0) {
-    // Get all item IDs
-    const itemIds = inventory.items.map(invItem => invItem.item_id)
+    // Get all item IDs, filtering out nulls
+    const itemIds = inventory.items
+      .map(invItem => invItem.item_id)
+      .filter((id): id is string => id !== null)
 
     // Fetch Steam prices for all items
     const steamPrices = await prisma.marketplacePrice.findMany({
@@ -126,7 +128,7 @@ export default async function InventoryPage() {
               Compare prices from Steam, CSFloat, Buff163, and more.
             </p>
 
-            <ImportButton consentGiven={inventory?.consent_given ?? false} />
+            <ImportButton consentGiven={false} />
 
             <p className="text-xs text-gray-500 mt-4">
               We'll fetch your public Steam inventory and calculate total value

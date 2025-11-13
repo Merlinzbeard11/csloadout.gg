@@ -125,19 +125,19 @@ export async function GET(request: NextRequest) {
       items: inventory?.items.map(invItem => ({
         steamAssetId: invItem.steam_asset_id,
         marketHashName: invItem.market_hash_name,
-        itemName: invItem.item.display_name,
+        itemName: invItem.item?.display_name || 'Unknown',
         currentValue: Number(invItem.current_value),
         bestPlatform: invItem.best_platform,
         wear: invItem.wear,
         quality: invItem.quality,
-        rarity: invItem.item.rarity,
-        type: invItem.item.type,
+        rarity: invItem.item?.rarity || null,
+        type: invItem.item?.type || 'unknown',
         customName: invItem.custom_name,
         canTrade: invItem.can_trade,
         tradeHoldUntil: invItem.trade_hold_until?.toISOString() || null,
         stickers: invItem.stickers as Array<{ name: string; position: number }> | null,
         // Pricing data for this item
-        pricing: pricingData[invItem.item_id] || []
+        pricing: invItem.item_id ? (pricingData[invItem.item_id] || []) : []
       })) || []
     }
 
