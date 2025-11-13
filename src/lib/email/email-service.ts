@@ -26,7 +26,15 @@ import { prisma } from '@/lib/prisma'
 import { render } from '@react-email/components'
 import PriceAlertEmail from '@/emails/price-alert'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy-load Resend client to avoid errors during build time
+// when environment variables may not be available
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY environment variable is not set')
+  }
+  return new Resend(apiKey)
+}
 
 export interface ISendPriceAlertEmailParams {
   to: string
@@ -91,6 +99,7 @@ class EmailService {
       const subject = `🔔 Price Alert: ${itemName} is now $${triggeredPrice.toFixed(2)}`
 
       // Step 4: Send email via Resend
+      const resend = getResendClient()
       const { data, error } = await resend.emails.send({
         from: 'CS Loadout Alerts <alerts@csloadout.gg>',
         to: [to],
