@@ -58,8 +58,27 @@ export async function GET(request: NextRequest) {
     if (!expectedState && existingSessionToken) {
       console.log('[Steam Callback] CSRF cookie missing but session exists - likely double-request after successful auth');
       console.log('[Steam Callback] Redirecting to homepage with existing session');
-      // User already authenticated, redirect to homepage
-      return NextResponse.redirect(new URL('/', baseUrl));
+
+      // Return HTML with JavaScript redirect (same as main flow)
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting...</p>
+  <script>
+    window.location.href = '/';
+  </script>
+</body>
+</html>`;
+
+      return new NextResponse(html, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html' },
+      });
     }
 
     if (!expectedState) {
@@ -138,13 +157,37 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Set session cookie and redirect
-    // Note: Gotcha 6c8a668c mentions cookie race conditions, but for OAuth callback
-    // we need server-side redirect since there's no client JavaScript running.
-    // The cookie is set in the response headers before the redirect.
-    const redirectUrl = new URL('/', baseUrl);
-    console.log('[Steam Callback] Creating redirect response to:', redirectUrl.toString());
-    const response = NextResponse.redirect(redirectUrl);
+    // Set session cookie and return HTML with client-side redirect
+    // Gotcha 6c8a668c: Cookie race condition
+    // Server-side redirect doesn't reliably set cookies before redirecting.
+    // Solution: Return HTML with JavaScript redirect after cookies are set.
+    const redirectUrl = '/';
+    console.log('[Steam Callback] Setting session cookie and preparing HTML response');
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Authentication successful. Redirecting...</p>
+  <script>
+    // Wait 100ms to ensure cookies are set before redirect
+    setTimeout(function() {
+      window.location.href = '${redirectUrl}';
+    }, 100);
+  </script>
+</body>
+</html>`;
+
+    const response = new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html',
+      },
+    });
 
     console.log('[Steam Callback] Setting session cookie');
     response.cookies.set('session_token', sessionToken, {
@@ -159,7 +202,7 @@ export async function GET(request: NextRequest) {
     console.log('[Steam Callback] Clearing CSRF cookie');
     response.cookies.delete('steam_auth_state');
 
-    console.log('[Steam Callback] Returning redirect response');
+    console.log('[Steam Callback] Returning HTML response with JavaScript redirect');
     return response;
   } catch (error) {
     console.error('[API /auth/steam/callback] Error:', error);
