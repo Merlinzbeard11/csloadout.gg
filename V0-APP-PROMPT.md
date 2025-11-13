@@ -203,8 +203,7 @@ export default async function ItemsPage({
   const page = Number(searchParams.page) || 1;
   const query = searchParams.q || '';
 
-  // FOR V0.APP: Use mock data
-  // FOR PRODUCTION: Replace with real API fetch
+  // Use mock data for v0.app preview
   const data: ItemsResponse = {
     items: MOCK_ITEMS,
     total: 5,
@@ -212,13 +211,6 @@ export default async function ItemsPage({
     pageSize: 50,
     totalPages: 1
   };
-
-  // FOR PRODUCTION: Uncomment this and remove mock data above
-  // const res = await fetch(`/api/items?page=${page}&pageSize=50&q=${query}`, {
-  //   cache: 'no-store'
-  // });
-  // if (!res.ok) return <ErrorState />;
-  // const data: ItemsResponse = await res.json();
 
   return (
     <div>
