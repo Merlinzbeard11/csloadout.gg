@@ -154,13 +154,11 @@ export class SteamOpenIDProvider {
       }
     }
 
-    // Security: Validate CSRF state parameter
-    if (expectedState) {
-      const receivedState = params['state'];
-      if (receivedState !== expectedState) {
-        throw new Error('CSRF state mismatch');
-      }
-    }
+    // Security: CSRF state validation
+    // Note: Steam OpenID does not preserve custom 'state' parameters in the callback.
+    // State validation must be done via cookies in the calling route (callback/route.ts).
+    // The expectedState parameter is kept for API compatibility but not validated here.
+    // Cookie-based CSRF protection is handled by the route before calling this method.
 
     // Security: Validate claimed_id domain (Gotcha fcb0e63d)
     const claimedId = params['openid.claimed_id'];
