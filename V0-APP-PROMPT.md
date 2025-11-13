@@ -140,8 +140,8 @@ PAGE REQUIREMENTS:
 
 HEADER SECTION:
 - Page title: "Browse CS2 Items" or "Search CS2 Items" (if searching)
-- Result count: "Showing X-Y of Z items"
-- If search: "Search results for '{query}' - X items found"
+- Result count: "Showing 1-50 of 10,234 items" (dynamic based on pagination)
+- If search: "Search results for 'ak-47' - 42 items found" (dynamic query and count)
 
 SEARCH BOX:
 - Input field: "Search items..." placeholder
