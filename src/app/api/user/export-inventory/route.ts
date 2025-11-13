@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     }>> = {}
 
     if (inventory && inventory.items.length > 0) {
-      const itemIds = inventory.items.map(invItem => invItem.item_id)
+      const itemIds = inventory.items.map(invItem => invItem.item_id).filter((id): id is string => id !== null)
 
       const prices = await prisma.marketplacePrice.findMany({
         where: {

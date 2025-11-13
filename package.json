@@ -13,8 +13,12 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
     "@prisma/client": "^5.22.0",
+    "@radix-ui/react-slot": "^1.2.4",
     "@react-email/components": "^1.0.0",
     "@types/openid": "^2.0.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.553.0",
     "next": "^14.2.18",
     "next-auth": "^5.0.0-beta.30",
     "openid": "^2.0.14",
@@ -23,6 +27,8 @@
     "react-email": "^5.0.1",
     "resend": "^6.4.2",
     "steam-next-auth": "^1.0.2",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss-animate": "^1.0.7",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
