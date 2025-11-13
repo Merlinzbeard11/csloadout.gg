@@ -18,6 +18,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'steamcdn-a.akamaihd.net',
       },
+      {
+        protocol: 'https',
+        hostname: 'community.akamai.steamstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+      },
     ],
   },
 };
