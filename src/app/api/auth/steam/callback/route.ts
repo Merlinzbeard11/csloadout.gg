@@ -24,6 +24,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { SteamOpenIDProvider } from '@/lib/steam/steam-openid-provider';
+import { SteamProfileClient } from '@/lib/steam/steam-profile-client';
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
 
@@ -113,6 +114,22 @@ export async function GET(request: NextRequest) {
 
     const steamId = result.steamId;
 
+    // Fetch Steam profile data from Steam Web API
+    // BDD Reference: features/06-steam-authentication.feature
+    //   Scenario: Fetch and store Steam profile data on first login
+    //   Scenario: Update profile data on subsequent logins
+    //   Scenario: Handle Steam API timeout during profile fetch
+    let profileData = null;
+    try {
+      const profileClient = new SteamProfileClient();
+      profileData = await profileClient.getPlayerSummaries(steamId);
+      console.log('[Steam Callback] Profile data fetched:', profileData.personaname);
+    } catch (error) {
+      console.error('[Steam Callback] Failed to fetch profile data:', error);
+      // Continue with authentication even if profile fetch fails (per BDD)
+      // Fallback to placeholder data
+    }
+
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { steam_id: steamId },
@@ -121,23 +138,27 @@ export async function GET(request: NextRequest) {
     let userId: string;
 
     if (existingUser) {
-      // Update existing user's last login
+      // Update existing user with fresh profile data + last login
+      // BDD: Scenario "Update profile data on subsequent logins"
       await prisma.user.update({
         where: { steam_id: steamId },
         data: {
+          persona_name: profileData?.personaname || existingUser.persona_name,
+          avatar: profileData?.avatar || existingUser.avatar,
+          profile_url: profileData?.profileurl || existingUser.profile_url,
           last_login: new Date(),
         },
       });
       userId = existingUser.id;
     } else {
-      // Create new user
-      // Note: Profile data will be synced separately via Steam Web API
+      // Create new user with real profile data (if available)
+      // BDD: Scenario "Fetch and store Steam profile data on first login"
       const newUser = await prisma.user.create({
         data: {
           steam_id: steamId,
-          persona_name: 'Steam User', // Placeholder until profile sync
-          profile_url: `https://steamcommunity.com/profiles/${steamId}`,
-          avatar: '',
+          persona_name: profileData?.personaname || 'Steam User', // Fallback if API fails
+          profile_url: profileData?.profileurl || `https://steamcommunity.com/profiles/${steamId}`,
+          avatar: profileData?.avatar || '',
           last_login: new Date(),
         },
       });

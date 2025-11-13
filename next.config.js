@@ -10,6 +10,14 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'community.cloudflare.steamstatic.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'avatars.steamstatic.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'steamcdn-a.akamaihd.net',
+      },
     ],
   },
 };

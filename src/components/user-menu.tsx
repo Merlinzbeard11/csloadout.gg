@@ -21,6 +21,7 @@ interface UserMenuProps {
 
 export function UserMenu({ personaName, avatar, steamId }: UserMenuProps) {
   const [isSigningOut, setIsSigningOut] = useState(false)
+  const [open, setOpen] = useState(false)
 
   const handleSignOut = async () => {
     setIsSigningOut(true)
@@ -37,9 +38,12 @@ export function UserMenu({ personaName, avatar, steamId }: UserMenuProps) {
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
+        <button
+          className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          onClick={() => setOpen(!open)}
+        >
           <Image
             src={avatar}
             alt={personaName}
@@ -47,9 +51,9 @@ export function UserMenu({ personaName, avatar, steamId }: UserMenuProps) {
             height={32}
             className="rounded-full"
           />
-        </Button>
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-56 bg-popover text-popover-foreground z-50">
         <div className="px-2 py-1.5 text-sm">
           <p className="font-medium">{personaName}</p>
           <p className="text-xs text-muted-foreground">Steam ID: {steamId}</p>
