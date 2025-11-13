@@ -17,7 +17,11 @@
 
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import ItemCard from '@/components/ItemCard';
+import { Suspense } from 'react';
+import Link from 'next/link';
+import { Breadcrumb } from '@/components/breadcrumb';
+import { ItemCard } from '@/components/item-card';
+import { CollectionSkeleton } from '@/components/collection-skeleton';
 
 interface CollectionItem {
   id: string;
@@ -124,104 +128,96 @@ export async function generateMetadata({
   };
 }
 
+async function CollectionContent({ slug }: { slug: string }) {
+  const collection = await getCollection(slug);
+
+  if (!collection) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+        <h2 className="text-2xl font-bold text-cs2-light mb-2">Collection not found</h2>
+        <p className="text-cs2-light/60 mb-6">The collection you're looking for doesn't exist.</p>
+        <Link
+          href="/collections"
+          className="bg-cs2-blue hover:bg-cs2-blue/80 text-white px-4 py-2 rounded-lg transition-colors"
+        >
+          Back to Collections
+        </Link>
+      </div>
+    );
+  }
+
+  if (collection.items.length === 0) {
+    return (
+      <>
+        <Breadcrumb
+          items={[
+            { label: "Home", href: "/" },
+            { label: "Collections", href: "/collections" },
+            { label: collection.name },
+          ]}
+        />
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-cs2-light mb-2">{collection.name}</h1>
+          {collection.description && <p className="text-cs2-light/60 mb-2">{collection.description}</p>}
+        </div>
+
+        <div className="flex flex-col items-center justify-center min-h-[300px] text-center">
+          <p className="text-cs2-light/60 text-lg">This collection has no items yet.</p>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Breadcrumb
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Collections", href: "/collections" },
+          { label: collection.name },
+        ]}
+      />
+
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-cs2-light mb-2">{collection.name}</h1>
+        {collection.description && <p className="text-cs2-light/60 mb-2">{collection.description}</p>}
+        <p className="text-cs2-light/60">
+          {collection.items.length} {collection.items.length === 1 ? 'item' : 'items'} in this collection
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {collection.items.map((item) => (
+          <ItemCard
+            key={item.id}
+            item={{
+              id: item.id,
+              name: item.name,
+              display_name: item.displayName,
+              rarity: item.rarity,
+              type: item.type,
+              image_url: item.imageUrl,
+              image_url_fallback: item.imageUrlFallback,
+            }}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default async function CollectionDetailPage({
   params,
 }: {
   params: { slug: string };
 }) {
-  const collection = await getCollection(params.slug);
-
-  if (!collection) {
-    notFound();
-  }
-
-  const releaseDate = new Date(collection.releaseDate);
-  const discontinuedDate = collection.discontinuedDate
-    ? new Date(collection.discontinuedDate)
-    : null;
-
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
-      <div className="container mx-auto px-4 py-8">
-        {/* Collection Header */}
-        <header className="mb-8">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">{collection.name}</h1>
-              {collection.description && (
-                <p className="text-gray-400 text-lg">{collection.description}</p>
-              )}
-            </div>
-
-            {/* Discontinued Badge */}
-            {collection.isDiscontinued && (
-              <div className="bg-red-600 text-white px-4 py-2 rounded-lg">
-                <div className="font-semibold">No Longer Drops</div>
-                {discontinuedDate && (
-                  <div className="text-xs text-red-100">
-                    Since {discontinuedDate.toLocaleDateString()}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Collection Metadata */}
-          <div className="flex gap-6 text-sm text-gray-400">
-            <div>
-              <span className="text-orange-500 font-semibold">
-                {collection.itemCount}
-              </span>{' '}
-              items
-            </div>
-            <div>
-              Released{' '}
-              <time dateTime={collection.releaseDate}>
-                {releaseDate.toLocaleDateString()}
-              </time>
-            </div>
-            {collection.totalValue > 0 && (
-              <div>
-                Total Value:{' '}
-                <span className="text-green-500 font-semibold">
-                  ${collection.totalValue.toFixed(2)}
-                </span>
-              </div>
-            )}
-          </div>
-        </header>
-
-        {/* Items Grid */}
-        <section>
-          <h2 className="text-2xl font-semibold mb-4">
-            Collection Items ({collection.items.length})
-          </h2>
-
-          {collection.items.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {collection.items.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={{
-                    id: item.id,
-                    name: item.name,
-                    display_name: item.displayName,
-                    rarity: item.rarity,
-                    type: item.type,
-                    image_url: item.imageUrl,
-                    image_url_fallback: item.imageUrlFallback,
-                  }}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-gray-400">
-                This collection has no items yet.
-              </p>
-            </div>
-          )}
-        </section>
+    <main className="min-h-screen bg-cs2-darker p-6 md:p-12">
+      <div className="max-w-7xl mx-auto">
+        <Suspense fallback={<CollectionSkeleton />}>
+          <CollectionContent slug={params.slug} />
+        </Suspense>
       </div>
     </main>
   );
