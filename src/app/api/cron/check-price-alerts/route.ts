@@ -33,6 +33,9 @@ import { prisma } from '@/lib/prisma'
 import { emailService } from '@/lib/email/email-service'
 import { pushService } from '@/lib/push/push-service'
 
+// Force dynamic rendering (uses request.headers for authorization)
+export const dynamic = 'force-dynamic'
+
 const COOLDOWN_MINUTES = 15
 
 /**
