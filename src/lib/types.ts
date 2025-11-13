@@ -53,3 +53,33 @@ export interface PublicLoadout {
 
 export type BudgetRange = "all" | "under-50" | "50-200" | "200-500" | "500-plus"
 export type SortOption = "newest" | "popular" | "upvotes"
+
+// Loadout detail types
+export interface LoadoutItem {
+  slot: string
+  item: {
+    id: string
+    name: string
+    image: string
+    rarity: "consumer" | "industrial" | "milspec" | "restricted" | "classified" | "covert" | "contraband"
+  }
+  marketplace: string
+  price: number
+}
+
+export interface LoadoutDetail {
+  id: string
+  name: string
+  slug: string
+  budget: number
+  totalCost: number
+  items: LoadoutItem[]
+  isPublic: boolean
+  upvotes: number
+  views: number
+  author: {
+    id: string
+    username: string
+  }
+  createdAt: string
+}
