@@ -59,7 +59,7 @@ interface CollectionDetailResponse {
 
 async function getCollection(slug: string): Promise<CollectionDetailResponse | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const res = await fetch(`${baseUrl}/api/collections/${slug}`, {
       next: { revalidate: 3600 }, // Revalidate every 1 hour
     });
@@ -94,7 +94,7 @@ async function getCollection(slug: string): Promise<CollectionDetailResponse | n
 // Generate static paths for all collections
 export async function generateStaticParams() {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const res = await fetch(`${baseUrl}/api/collections`);
 
     if (!res.ok) {

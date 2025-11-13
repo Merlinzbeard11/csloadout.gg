@@ -54,7 +54,7 @@ const rarityColors: Record<string, string> = {
  */
 async function fetchItem(id: string): Promise<Item | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const url = `${baseUrl}/api/items/${id}`;
 
     const response = await fetch(url, {

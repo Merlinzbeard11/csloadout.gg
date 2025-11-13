@@ -64,7 +64,12 @@ interface ItemsResponse {
  */
 async function fetchItems(page: number, pageSize: number, searchQuery?: string): Promise<ItemsResponse | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    // Construct base URL dynamically from environment or use localhost with detected port
+    // In server-side context, we need absolute URL for fetch
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
+                    process.env.NEXTAUTH_URL ||
+                    'http://localhost:3000';
+
     const params = new URLSearchParams({
       page: page.toString(),
       pageSize: pageSize.toString(),
