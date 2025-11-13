@@ -28,21 +28,26 @@ interface CollectionCardProps {
 }
 
 export default function CollectionCard({ collection }: CollectionCardProps) {
-  const releaseDate = new Date(collection.releaseDate);
-
   return (
-    <div
+    <Link
+      href={`/collections/${collection.slug}`}
       data-testid="collection-card"
-      className="group relative overflow-hidden rounded-lg bg-gray-900 border border-gray-800 hover:border-orange-500 transition-all duration-300"
+      className="block bg-cs2-dark border border-cs2-blue/20 rounded-lg hover:border-cs2-blue/50 transition-colors"
     >
-      <Link href={`/collections/${collection.slug}`} className="block">
-        {/* Collection Image */}
-        <div className="relative aspect-video w-full overflow-hidden">
+      <div className="p-6 space-y-4">
+        {/* Collection header */}
+        <div>
+          <h3 className="text-lg font-bold text-cs2-light">{collection.name}</h3>
+          <p className="text-sm text-cs2-light/60">{collection.itemCount} items</p>
+        </div>
+
+        {/* Collection Image Preview */}
+        <div className="relative aspect-video w-full overflow-hidden rounded bg-cs2-darker/50">
           <Image
             src={collection.imageUrl}
             alt={collection.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
 
@@ -53,21 +58,7 @@ export default function CollectionCard({ collection }: CollectionCardProps) {
             </div>
           )}
         </div>
-
-        {/* Collection Info */}
-        <div className="p-4">
-          <h3 className="text-lg font-semibold text-white group-hover:text-orange-500 transition-colors line-clamp-1">
-            {collection.name}
-          </h3>
-
-          <div className="mt-2 flex items-center justify-between text-sm text-gray-400">
-            <span>{collection.itemCount} items</span>
-            <time dateTime={collection.releaseDate}>
-              {releaseDate.toLocaleDateString()}
-            </time>
-          </div>
-        </div>
-      </Link>
-    </div>
+      </div>
+    </Link>
   );
 }

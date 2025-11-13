@@ -56,21 +56,20 @@ export default async function CollectionsPage() {
   const { collections, total } = await getCollections();
 
   return (
-    <main className="min-h-screen bg-gray-950 text-white">
-      <div className="container mx-auto px-4 py-8">
+    <main className="min-h-screen bg-cs2-darker text-cs2-light">
+      <div className="container mx-auto px-4 py-12">
         {/* Page Header */}
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Browse CS2 Collections</h1>
-          <p className="text-gray-400">
-            Explore {total} CS2 skin collections. Discover themed loadouts and
-            rare items.
+        <header className="mb-12 space-y-2">
+          <h1 className="text-4xl font-bold">Browse CS2 Collections</h1>
+          <p className="text-cs2-light/60 text-lg">
+            Explore item collections from CS2 cases and operations
           </p>
         </header>
 
         {/* Collections Grid */}
         {collections.length > 0 ? (
           <section>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {collections.map((collection) => (
                 <CollectionCard key={collection.id} collection={collection} />
               ))}
@@ -78,16 +77,14 @@ export default async function CollectionsPage() {
           </section>
         ) : (
           /* Empty State */
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-lg mb-4">
-              No collections found. Please try again later.
-            </p>
+          <div className="flex items-center justify-center min-h-[400px]">
+            <p className="text-cs2-light/60 text-center">No collections found.</p>
           </div>
         )}
 
         {/* Total Count Footer */}
         {total > 0 && (
-          <footer className="mt-8 text-center text-gray-500 text-sm">
+          <footer className="mt-8 text-center text-cs2-light/50 text-sm">
             Showing {collections.length} of {total} collections
           </footer>
         )}
