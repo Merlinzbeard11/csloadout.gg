@@ -56,6 +56,9 @@ interface SelectedItem {
 }
 
 describe('BudgetTracker Client Component', () => {
+  // Generate unique IDs for test data
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
   const mockAllocation: CustomAllocation = {
     weapon_skins: 70.00,
     knife: 15.00,
@@ -71,8 +74,13 @@ describe('BudgetTracker Client Component', () => {
     selectedItems: []
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // ============================================================================

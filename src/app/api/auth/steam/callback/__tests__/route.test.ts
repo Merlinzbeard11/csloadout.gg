@@ -41,16 +41,18 @@ describe('GET /api/auth/steam/callback', () => {
     communityvisibilitystate: 3,
   }
 
-  beforeEach(() => {
-    jest.clearAllMocks()
-    process.env.NEXTAUTH_URL = 'http://localhost:3000'
-    process.env.STEAM_API_KEY = 'test_api_key'
-  })
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction();
+    jest.clearAllMocks();
+    process.env.NEXTAUTH_URL = 'http://localhost:3000';
+    process.env.STEAM_API_KEY = 'test_api_key';
+  });
 
   afterEach(() => {
-    delete process.env.NEXTAUTH_URL
-    delete process.env.STEAM_API_KEY
-  })
+    global.prismaTestHelper.rollbackTransaction();
+    delete process.env.NEXTAUTH_URL;
+    delete process.env.STEAM_API_KEY;
+  });
 
   it('should fetch Steam profile data and store real persona_name on new user creation', async () => {
     // Arrange: Mock OpenID verification success

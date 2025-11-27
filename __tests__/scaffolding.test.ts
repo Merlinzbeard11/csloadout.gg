@@ -8,6 +8,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 describe('Next.js Scaffolding', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
+  })
+
   describe('package.json', () => {
     it('should exist', () => {
       const exists = fs.existsSync(path.join(process.cwd(), 'package.json'));

@@ -34,8 +34,13 @@ import { prisma } from '@/lib/prisma'
 import { InventorySyncService } from '@/lib/inventory/inventory-sync-service'
 
 describe('POST /api/inventory/sync', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // BDD: Scenario "First-time inventory import shows total value"

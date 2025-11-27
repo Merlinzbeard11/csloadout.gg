@@ -55,6 +55,7 @@ interface InventoryItemWithPricing {
 }
 
 describe('Inventory Item Grid (TDD - RED Phase)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testSteamId: string
   let testInventoryId: string
@@ -63,18 +64,12 @@ describe('Inventory Item Grid (TDD - RED Phase)', () => {
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-id-grid',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Test User Grid',
         profile_url: 'https://steamcommunity.com/id/testuser',
         avatar: 'https://example.com/avatar.png',
@@ -87,7 +82,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     // Create test item (AK-47 | Redline)
     const item = await prisma.item.create({
       data: {
-        name: 'test-ak47-redline',
+        name: `test-ak47-redline-${uniqueId()}`,
         display_name: 'AK-47 | Redline (Field-Tested)',
         search_name: 'ak47 redline field tested',
         type: 'skin',
@@ -150,7 +145,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       data: {
         inventory_id: testInventoryId,
         item_id: testItemId,
-        steam_asset_id: 'test-asset-12345',
+        steam_asset_id: `test-asset-${uniqueId()}`,
         market_hash_name: 'AK-47 | Redline (Field-Tested)',
         wear: 'field_tested',
         quality: 'normal',
@@ -184,8 +179,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // Then I should see the item listed
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Should display item name
       expect(screen.getByText(/AK-47 \| Redline/i)).toBeInTheDocument()
@@ -195,8 +189,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // BDD: Items should display with proper images
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Should have image with Steam CDN URL
       const image = screen.getByAltText(/AK-47 \| Redline/i)
@@ -207,8 +200,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // BDD: Display item attributes (Field-Tested)
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/Field Tested/i)).toBeInTheDocument()
     })
@@ -217,8 +209,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // BDD: Extract float value from Steam API response
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/0\.25/)).toBeInTheDocument()
     })
@@ -229,8 +220,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // BDD: Then I should see the item listed with Best Platform: CSFloat
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/CSFLOAT/i)).toBeInTheDocument()
       // Price appears multiple times (summary + item grid), just verify it exists
@@ -241,8 +231,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // BDD: And Steam Price: $7.20
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/Steam/i)).toBeInTheDocument()
       expect(screen.getByText(/\$7\.20/)).toBeInTheDocument()
@@ -253,8 +242,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // In this test: $8.67 (CSFloat) - $7.20 (Steam) = $1.47
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/\$1\.47/)).toBeInTheDocument()
     })
@@ -263,8 +251,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // BDD: Best platform should be visually distinct
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Best platform should have distinct styling (green color, badge, etc.)
       const bestPlatformElement = screen.getByText(/CSFLOAT/i)
@@ -278,7 +265,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // Add second item (M4A4 | Asiimov)
       const m4a4Item = await prisma.item.create({
         data: {
-          name: 'test-m4a4-asiimov',
+          name: `test-m4a4-asiimov-${uniqueId()}`,
           display_name: 'M4A4 | Asiimov (Battle-Scarred)',
           search_name: 'm4a4 asiimov battle scarred',
           type: 'skin',
@@ -294,7 +281,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
         data: {
           inventory_id: testInventoryId,
           item_id: m4a4Item.id,
-          steam_asset_id: 'test-asset-67890',
+          steam_asset_id: `test-asset-${uniqueId()}`,
           market_hash_name: 'M4A4 | Asiimov (Battle-Scarred)',
           wear: 'battle_scarred',
           quality: 'stattrak',
@@ -313,8 +300,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
 
     it('should display multiple items in grid layout', async () => {
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/AK-47 \| Redline/i)).toBeInTheDocument()
       expect(screen.getByText(/M4A4 \| Asiimov/i)).toBeInTheDocument()
@@ -322,16 +308,14 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
 
     it('should display StatTrak™ badge for StatTrak items', async () => {
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/StatTrak™/i)).toBeInTheDocument()
     })
 
     it('should use grid layout with responsive columns', async () => {
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Grid container should have grid classes
       const gridContainer = container.querySelector('.grid')
@@ -357,16 +341,14 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
 
     it('should display empty state message when inventory has no items', async () => {
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/no items in your inventory/i)).toBeInTheDocument()
     })
 
     it('should show import button in empty state', async () => {
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByRole('button', { name: /import/i })).toBeInTheDocument()
     })
@@ -377,8 +359,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       // BDD: Items should show rarity (Classified = pink/magenta)
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       const rarityBadge = screen.getByText(/classified/i)
       expect(rarityBadge).toBeInTheDocument()

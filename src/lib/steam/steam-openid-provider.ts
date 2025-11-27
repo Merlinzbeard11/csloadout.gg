@@ -173,6 +173,8 @@ export class SteamOpenIDProvider {
 
     // Security: Validate return_to URL matches callback URL
     const returnTo = params['openid.return_to'];
+    console.log('[SteamOpenID] return_to:', returnTo);
+    console.log('[SteamOpenID] callbackUrl:', this.callbackUrl);
     if (!returnTo.startsWith(this.callbackUrl)) {
       throw new Error('return_to URL does not match callback URL');
     }
@@ -184,15 +186,18 @@ export class SteamOpenIDProvider {
         .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
         .join('&');
       const verificationUrl = `${this.callbackUrl}?${queryString}`;
+      console.log('[SteamOpenID] verificationUrl length:', verificationUrl.length);
 
       this.relyingParty.verifyAssertion(verificationUrl, (error, verified) => {
         if (error) {
-          reject(new Error('OpenID signature verification failed'));
+          console.error('[SteamOpenID] verifyAssertion error:', error);
+          reject(new Error(`OpenID signature verification failed: ${error.message || error}`));
           return;
         }
 
         if (!verified) {
-          reject(new Error('OpenID signature verification failed'));
+          console.error('[SteamOpenID] verifyAssertion returned false/null');
+          reject(new Error('OpenID signature verification failed: not verified'));
           return;
         }
 

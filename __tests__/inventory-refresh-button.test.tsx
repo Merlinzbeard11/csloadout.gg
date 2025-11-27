@@ -37,25 +37,19 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Manual Refresh Button (TDD - Iteration 25)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemId: string
 
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-refresh-76561199000000000',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Refresh Test User',
         profile_url: 'https://steamcommunity.com/id/refreshtest',
         avatar: 'https://example.com/avatar.jpg'
@@ -66,7 +60,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     // Create test item
     const item = await prisma.item.create({
       data: {
-        name: 'test-ak47-redline',
+        name: `test-ak47-redline-${uniqueId()}`,
         display_name: 'AK-47 | Redline',
         search_name: 'ak47 redline',
         type: 'weapon',
@@ -80,7 +74,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-refresh-76561199000000000'
+        steamId: user.steam_id
       }
     })
   })
@@ -96,7 +90,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-refresh-76561199000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -108,7 +102,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -119,8 +113,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/Last synced:.*7 hours ago/i)).toBeInTheDocument()
   })
@@ -131,7 +124,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-refresh-76561199000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -143,7 +136,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -154,8 +147,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Search for button element specifically (not toast notification text)
     const buttons = container.querySelectorAll('button')
@@ -171,7 +163,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-refresh-76561199000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -183,7 +175,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -194,8 +186,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should NOT show refresh button (check for button element, not just text)
     const buttons = container.querySelectorAll('button')
@@ -209,7 +200,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-refresh-76561199000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -221,7 +212,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -232,8 +223,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // At exactly 6 hours, cache is stale (>= 6 hours) - look for button element
     const buttons = container.querySelectorAll('button')
@@ -249,7 +239,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-refresh-76561199000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -261,7 +251,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -272,8 +262,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should have a button element with SVG icon
     const buttons = container.querySelectorAll('button')
@@ -291,7 +280,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-refresh-76561199000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -303,7 +292,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -314,8 +303,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Both "Last synced" and "Refresh" button should be visible
     expect(screen.getByText(/Last synced/i)).toBeInTheDocument()

@@ -26,8 +26,13 @@ describe('UserMenu Component', () => {
     steamId: '76561198000000000',
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction();
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction();
   });
 
   describe('Display Requirements', () => {

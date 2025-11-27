@@ -25,15 +25,18 @@ const prisma = new PrismaClient()
 describe('Feature 08 Phase 2 - Loadout Storage', () => {
   let testUserId: string
 
+  // Generate unique IDs for test data
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
   beforeAll(async () => {
     await prisma.$connect()
 
     // Create test user
     const testUser = await prisma.user.upsert({
-      where: { steam_id: '76561198999999999' },
+      where: { steam_id: `76561198999999999-${uniqueId()}` },
       update: {},
       create: {
-        steam_id: '76561198999999999',
+        steam_id: `76561198999999999-${uniqueId()}`,
         persona_name: 'TestUser_LoadoutStorage',
         profile_url: 'https://steamcommunity.com/profiles/76561198999999999',
         avatar: 'https://example.com/avatar-test.jpg',
@@ -43,6 +46,14 @@ describe('Feature 08 Phase 2 - Loadout Storage', () => {
     })
 
     testUserId = testUser.id
+  })
+
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   afterAll(async () => {

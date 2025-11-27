@@ -27,6 +27,14 @@ describe('Feature 08 Phase 1 - Database Foundation', () => {
     await prisma.$connect()
   })
 
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
+  })
+
   afterAll(async () => {
     await prisma.$disconnect()
   })

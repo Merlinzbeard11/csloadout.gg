@@ -36,19 +36,23 @@ const skipWithoutDB = () => {
 };
 
 describe('GET /api/items/:id/prices', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   // Test data setup
   let testItemId: string;
   let testItemWithoutPrices: string;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     if (skipWithoutDB()) return;
+
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
 
     // Create test item with prices
     const item = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
-        display_name: 'AK-47 | Redline (Field-Tested)',
-        search_name: 'ak47redlinefieldtested',
+        name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        display_name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        search_name: `ak47redlinefieldtested${uniqueId()}`,
         type: 'skin',
         rarity: 'classified',
         quality: 'normal',
@@ -98,9 +102,9 @@ describe('GET /api/items/:id/prices', () => {
     // Create item without prices
     const itemWithoutPrices = await prisma.item.create({
       data: {
-        name: 'Test Item Without Prices',
-        display_name: 'Test Item Without Prices',
-        search_name: 'testitemwithoutprices',
+        name: `Test Item Without Prices ${uniqueId()}`,
+        display_name: `Test Item Without Prices ${uniqueId()}`,
+        search_name: `testitemwithoutprices${uniqueId()}`,
         type: 'skin',
         rarity: 'consumer',
         quality: 'normal',
@@ -111,18 +115,15 @@ describe('GET /api/items/:id/prices', () => {
     testItemWithoutPrices = itemWithoutPrices.id;
   });
 
+  afterEach(() => {
+    if (skipWithoutDB()) return;
+
+    global.prismaTestHelper.rollbackTransaction()
+  })
+
   afterAll(async () => {
     if (skipWithoutDB()) return;
 
-    // Cleanup test data
-    await prisma.marketplacePrice.deleteMany({
-      where: { item_id: testItemId },
-    });
-    await prisma.item.deleteMany({
-      where: {
-        id: { in: [testItemId, testItemWithoutPrices] },
-      },
-    });
     await prisma.$disconnect();
   });
 

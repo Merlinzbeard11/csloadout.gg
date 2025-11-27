@@ -31,8 +31,7 @@ describe('Interactive Privacy Workflow (TDD - Iteration 17)', () => {
   const mockOnRetry = jest.fn()
 
   beforeEach(() => {
-    mockOnClose.mockClear()
-    mockOnRetry.mockClear()
+    jest.clearAllMocks()
   })
 
   it('should display heading "Your Steam Inventory is Private"', () => {

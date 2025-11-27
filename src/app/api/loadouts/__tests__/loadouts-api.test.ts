@@ -49,15 +49,18 @@ describe('Feature 08 Phase 4 - Loadouts API', () => {
   let mockSession1: Session
   let mockSession2: Session
 
+  // Generate unique IDs for test data
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
   beforeAll(async () => {
     await prisma.$connect()
 
     // Create test users
     testUser1 = await prisma.user.upsert({
-      where: { steam_id: '76561199000000001' },
+      where: { steam_id: `76561199000000001-${uniqueId()}` },
       update: {},
       create: {
-        steam_id: '76561199000000001',
+        steam_id: `76561199000000001-${uniqueId()}`,
         persona_name: 'TestUser1_API',
         profile_url: 'https://steamcommunity.com/profiles/76561199000000001',
         avatar: 'https://example.com/avatar1.jpg',
@@ -67,10 +70,10 @@ describe('Feature 08 Phase 4 - Loadouts API', () => {
     })
 
     testUser2 = await prisma.user.upsert({
-      where: { steam_id: '76561199000000002' },
+      where: { steam_id: `76561199000000002-${uniqueId()}` },
       update: {},
       create: {
-        steam_id: '76561199000000002',
+        steam_id: `76561199000000002-${uniqueId()}`,
         persona_name: 'TestUser2_API',
         profile_url: 'https://steamcommunity.com/profiles/76561199000000002',
         avatar: 'https://example.com/avatar2.jpg',
@@ -109,6 +112,15 @@ describe('Feature 08 Phase 4 - Loadouts API', () => {
     }
   })
 
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
+  })
+
   afterAll(async () => {
     // Cleanup
     await prisma.loadout.deleteMany({ where: { user_id: testUser1.id } })
@@ -116,10 +128,6 @@ describe('Feature 08 Phase 4 - Loadouts API', () => {
     await prisma.user.delete({ where: { id: testUser1.id } })
     await prisma.user.delete({ where: { id: testUser2.id } })
     await prisma.$disconnect()
-  })
-
-  afterEach(() => {
-    jest.clearAllMocks()
   })
 
   // ============================================================================

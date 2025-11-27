@@ -103,7 +103,14 @@ export async function GET(request: NextRequest) {
       identity: params['openid.identity']
     });
 
-    const result = await provider.verifyCallback(params, expectedState);
+    let result;
+    try {
+      result = await provider.verifyCallback(params, expectedState);
+    } catch (verifyError) {
+      console.error('[Steam Callback] verifyCallback threw error:', verifyError);
+      console.error('[Steam Callback] Error message:', verifyError instanceof Error ? verifyError.message : String(verifyError));
+      throw verifyError;
+    }
 
     if (!result.verified || !result.steamId) {
       console.error('[Steam Callback] Verification failed:', result);

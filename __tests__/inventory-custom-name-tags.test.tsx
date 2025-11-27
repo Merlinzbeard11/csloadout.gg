@@ -37,25 +37,19 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Custom Name Tags (TDD - Iteration 23)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemId: string
 
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-customname-76561198999999999',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Custom Name Test User',
         profile_url: 'https://steamcommunity.com/id/customnametest',
         avatar: 'https://example.com/avatar.jpg'
@@ -66,7 +60,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     // Create test item (AK-47 | Redline)
     const item = await prisma.item.create({
       data: {
-        name: 'test-ak47-redline',
+        name: `test-ak47-redline-${uniqueId()}`,
         display_name: 'AK-47 | Redline',
         search_name: 'ak47 redline',
         type: 'weapon',
@@ -80,7 +74,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-customname-76561198999999999'
+        steamId: user.steam_id
       }
     })
   })
@@ -96,7 +90,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-customname-76561198999999999',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -108,7 +102,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             custom_name: 'My Custom Name',
             current_value: 50.00,
@@ -120,8 +114,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Item should be matched correctly (display_name from Item table, not custom name)
     expect(screen.getByText(/AK-47.*Redline/i)).toBeInTheDocument()
@@ -133,7 +126,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-customname-76561198999999999',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -145,7 +138,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             custom_name: 'My Custom Name',
             current_value: 50.00,
@@ -157,8 +150,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Custom name label and value are in separate elements
     expect(screen.getByText(/Custom Name:/i)).toBeInTheDocument()
@@ -171,7 +163,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-customname-76561198999999999',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -183,7 +175,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             // No custom_name field
             current_value: 50.00,
@@ -195,8 +187,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should NOT show custom name section
     expect(screen.queryByText(/Custom Name:/i)).not.toBeInTheDocument()
@@ -208,7 +199,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     const inventory = await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-customname-76561198999999999',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -220,7 +211,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             custom_name: 'My Epic AK',
             current_value: 50.00,
@@ -247,7 +238,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-customname-76561198999999999',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -259,7 +250,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             custom_name: '"The Destroyer"',
             current_value: 50.00,
@@ -271,8 +262,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should have a dedicated custom name section with data-testid
     const customNameSection = container.querySelector('[data-testid="custom-name-section"]')
@@ -285,7 +275,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-customname-76561198999999999',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -297,7 +287,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             custom_name: '🔥 MLG Pro 🔥',
             current_value: 50.00,
@@ -309,8 +299,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should render emojis and special characters correctly
     expect(screen.getByText(/🔥 MLG Pro 🔥/)).toBeInTheDocument()

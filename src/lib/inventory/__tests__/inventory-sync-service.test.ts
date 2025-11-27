@@ -37,7 +37,10 @@ describe('InventorySyncService', () => {
   let steamClient: SteamInventoryClient
   let prismaMock: any
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+
     // Create mock Prisma client with all necessary methods
     prismaMock = {
       user: {
@@ -70,7 +73,7 @@ describe('InventorySyncService', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   describe('First-time Inventory Import', () => {

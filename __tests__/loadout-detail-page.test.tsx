@@ -79,6 +79,9 @@ interface MarketplacePrice {
 }
 
 describe('Loadout Detail Page (Server Component)', () => {
+  // Generate unique IDs for test data
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
   const mockLoadout: Loadout = {
     id: 'loadout-123',
     user_id: 'user-456',
@@ -99,8 +102,13 @@ describe('Loadout Detail Page (Server Component)', () => {
     updated_at: new Date('2025-11-09')
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // ============================================================================

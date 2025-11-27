@@ -45,8 +45,13 @@ import { prisma } from '@/lib/prisma'
 import { InventorySyncService } from '@/lib/inventory/inventory-sync-service'
 
 describe('GET /api/inventory', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // BDD: Scenario "Cache prevents redundant API calls"
@@ -161,8 +166,13 @@ describe('GET /api/inventory', () => {
 })
 
 describe('POST /api/inventory/sync', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // BDD: Scenario "First-time inventory import shows total value"
@@ -297,8 +307,13 @@ describe('POST /api/inventory/sync', () => {
 })
 
 describe('DELETE /api/inventory', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // BDD: Scenario "Delete inventory data (GDPR Article 17 - Right to be Forgotten)"

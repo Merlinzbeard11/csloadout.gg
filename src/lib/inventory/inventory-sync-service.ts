@@ -150,6 +150,7 @@ export class InventorySyncService {
                 trade_hold_until: item.tradeHoldUntil,
                 current_value: item.currentValue,
                 best_platform: item.bestPlatform,
+                icon_url: item.iconUrl,
               })),
             })
           }
@@ -264,8 +265,9 @@ export class InventorySyncService {
         stickers: steamItem.stickerDescriptions,
         isTradable: steamItem.isTradable,
         tradeHoldUntil: steamItem.tradeHoldUntil,
-        currentValue: price ? parseFloat(price.total_cost.toString()) : null,
+        currentValue: price ? parseFloat(price.price.toString()) : null, // Use lowest_price, not total_cost
         bestPlatform: price?.platform ?? null,
+        iconUrl: steamItem.iconUrl,
       }
     })
   }
@@ -307,4 +309,5 @@ interface MatchedInventoryItem {
   tradeHoldUntil?: Date
   currentValue: number | null
   bestPlatform: string | null
+  iconUrl?: string
 }

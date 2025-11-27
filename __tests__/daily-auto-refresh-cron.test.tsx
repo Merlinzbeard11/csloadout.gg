@@ -27,13 +27,11 @@ jest.mock('@/actions/inventory', () => ({
 }))
 
 describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUsers: Array<{ id: string; steam_id: string }>
 
   beforeEach(async () => {
-    // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear all mocks
     jest.clearAllMocks()
 
     // Reset mock
@@ -84,7 +82,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     // Create active user (logged in 3 days ago) with stale inventory (synced 25 hours ago)
     const user1 = await prisma.user.create({
       data: {
-        steam_id: 'test-cron-76561198000000001',
+        steam_id: `test-cron-${uniqueId()}`,
         persona_name: 'Active User 1',
         profile_url: 'https://steamcommunity.com/id/user1',
         avatar: 'https://example.com/avatar1.jpg',
@@ -95,7 +93,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: user1.id,
-        steam_id: 'test-cron-76561198000000001',
+        steam_id: user1.steam_id,
         total_items: 5,
         total_value: 100.00,
         sync_status: 'success',
@@ -117,7 +115,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     const data = await response.json()
     expect(data.success).toBe(true)
     expect(data.usersProcessed).toBe(1)
-    expect(mockRefreshInventoryData).toHaveBeenCalledWith('test-cron-76561198000000001')
+    expect(mockRefreshInventoryData).toHaveBeenCalledWith(user1.steam_id)
 
     delete process.env.CRON_SECRET
   })
@@ -128,7 +126,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     // Create inactive user (logged in 10 days ago) with stale inventory
     const user1 = await prisma.user.create({
       data: {
-        steam_id: 'test-cron-76561198000000002',
+        steam_id: `test-cron-${uniqueId()}`,
         persona_name: 'Inactive User',
         profile_url: 'https://steamcommunity.com/id/user2',
         avatar: 'https://example.com/avatar2.jpg',
@@ -139,7 +137,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: user1.id,
-        steam_id: 'test-cron-76561198000000002',
+        steam_id: user1.steam_id,
         total_items: 5,
         total_value: 100.00,
         sync_status: 'success',
@@ -172,7 +170,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     // Create active user with fresh inventory (synced 5 hours ago)
     const user1 = await prisma.user.create({
       data: {
-        steam_id: 'test-cron-76561198000000003',
+        steam_id: `test-cron-${uniqueId()}`,
         persona_name: 'Active User Fresh',
         profile_url: 'https://steamcommunity.com/id/user3',
         avatar: 'https://example.com/avatar3.jpg',
@@ -183,7 +181,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: user1.id,
-        steam_id: 'test-cron-76561198000000003',
+        steam_id: user1.steam_id,
         total_items: 5,
         total_value: 100.00,
         sync_status: 'success',
@@ -217,7 +215,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     for (let i = 1; i <= 3; i++) {
       const user = await prisma.user.create({
         data: {
-          steam_id: `test-cron-7656119800000000${i}`,
+          steam_id: `test-cron-${uniqueId()}`,
           persona_name: `Active User ${i}`,
           profile_url: `https://steamcommunity.com/id/user${i}`,
           avatar: `https://example.com/avatar${i}.jpg`,
@@ -228,7 +226,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
       await prisma.userInventory.create({
         data: {
           user_id: user.id,
-          steam_id: `test-cron-7656119800000000${i}`,
+          steam_id: user.steam_id,
           total_items: 5,
           total_value: 100.00,
           sync_status: 'success',
@@ -270,7 +268,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
     for (let i = 1; i <= 2; i++) {
       const user = await prisma.user.create({
         data: {
-          steam_id: `test-cron-7656119800000000${i}`,
+          steam_id: `test-cron-${uniqueId()}`,
           persona_name: `Active User ${i}`,
           profile_url: `https://steamcommunity.com/id/user${i}`,
           avatar: `https://example.com/avatar${i}.jpg`,
@@ -281,7 +279,7 @@ describe('Daily Auto-Refresh Cron Job (TDD - Iteration 26)', () => {
       await prisma.userInventory.create({
         data: {
           user_id: user.id,
-          steam_id: `test-cron-7656119800000000${i}`,
+          steam_id: user.steam_id,
           total_items: 5,
           total_value: 100.00,
           sync_status: 'success',

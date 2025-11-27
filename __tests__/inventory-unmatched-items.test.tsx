@@ -39,22 +39,17 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Unmatched Items Handling (TDD - Iteration 20)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
 
   beforeEach(async () => {
-    // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Unmatched Test User',
         profile_url: 'https://steamcommunity.com/id/unmatchedtest',
         avatar: 'https://example.com/avatar.jpg'
@@ -66,7 +61,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-unmatched-76561198888888888'
+        steamId: user.steam_id
       }
     })
   })
@@ -82,7 +77,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 247,
         total_value: 5000.00,
         sync_status: 'success',
@@ -93,8 +88,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/247 items imported successfully/i)).toBeInTheDocument()
   })
@@ -105,7 +99,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 247,
         total_value: 5000.00,
         sync_status: 'success',
@@ -116,8 +110,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/⚠️ 3 items had issues/i)).toBeInTheDocument()
   })
@@ -128,7 +121,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 247,
         total_value: 5000.00,
         sync_status: 'success',
@@ -139,8 +132,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should show yellow warning section
     const warningSection = container.querySelector('.bg-yellow-50')
@@ -153,7 +145,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 250,
         total_value: 5500.00,
         sync_status: 'success',
@@ -164,8 +156,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should NOT show warning
     expect(screen.queryByText(/items had issues/i)).not.toBeInTheDocument()
@@ -177,7 +168,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 250,
         total_value: 5500.00,
         sync_status: 'success',
@@ -188,8 +179,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.queryByText(/items had issues/i)).not.toBeInTheDocument()
   })
@@ -200,7 +190,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 247,
         total_value: 5000.00,
         sync_status: 'success',
@@ -211,8 +201,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should explain common reasons
     expect(screen.getByText(/not yet in our database/i)).toBeInTheDocument()
@@ -224,7 +213,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 247,
         total_value: 5000.00,
         sync_status: 'success',
@@ -235,8 +224,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should mention non-skin exclusion
     expect(screen.getByText(/operation coins|music kits|stickers/i)).toBeInTheDocument()
@@ -248,7 +236,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-unmatched-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 247,
         total_value: 5000.00,
         sync_status: 'success',
@@ -259,8 +247,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     const warningSection = container.querySelector('.bg-yellow-50')
     expect(warningSection).toBeInTheDocument()

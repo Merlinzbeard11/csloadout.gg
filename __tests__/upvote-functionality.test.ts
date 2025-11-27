@@ -33,6 +33,9 @@ describe('Phase 7d: Upvote Functionality', () => {
   let privateLoadoutId: string
 
   beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+
     // Create test user
     const testUser = await prisma.user.create({
       data: {
@@ -85,15 +88,7 @@ describe('Phase 7d: Upvote Functionality', () => {
   })
 
   afterEach(() => {
-    // Rollback transaction - automatic cleanup, no manual deletion needed
     global.prismaTestHelper.rollbackTransaction()
-  })
-    await prisma.loadout.deleteMany({
-      where: { user_id: { in: [testUserId, otherUserId] } }
-    })
-    await prisma.user.deleteMany({
-      where: { id: { in: [testUserId, otherUserId] } }
-    })
   })
 
   describe('Upvote Creation', () => {

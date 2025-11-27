@@ -17,23 +17,36 @@
 
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import ItemCard from '@/components/ItemCard';
+import { GroupedItemCard } from '@/components/grouped-item-card';
 
 // Force dynamic rendering (fetches from API with dynamic route parameter)
 export const dynamic = 'force-dynamic';
 
-interface CaseItem {
+interface Variant {
   id: string;
   name: string;
-  displayName: string;
-  searchName: string;
+  displayName: string | null;
+  variantType: 'normal' | 'stattrak' | 'souvenir';
+  wear: string | null;
+  imageUrl: string;
+  imageUrlFallback: string | null;
+  dropProbability: number;
+}
+
+interface GroupedCaseItem {
+  baseName: string;
+  slug: string;
   rarity: string | null;
   type: string;
   weaponType: string | null;
   imageUrl: string;
   imageUrlFallback: string | null;
-  dropProbability: number;
   isSpecialItem: boolean;
+  dropProbability: number;
+  variantCount: number;
+  hasStatTrak: boolean;
+  hasSouvenir: boolean;
+  variants: Variant[];
 }
 
 interface CaseDetailResponse {
@@ -44,8 +57,9 @@ interface CaseDetailResponse {
   imageUrl: string;
   keyPrice: number;
   releaseDate: string;
-  items: CaseItem[];
+  items: GroupedCaseItem[];
   itemCount: number;
+  totalVariants: number;
   expectedValue: number;
   probabilityValid: boolean;
   totalProbability: number;
@@ -138,7 +152,7 @@ export default async function CaseDetailPage({
   const releaseDate = new Date(caseData.releaseDate);
 
   // Group items by rarity for display
-  const itemsByRarity: Record<string, CaseItem[]> = {};
+  const itemsByRarity: Record<string, GroupedCaseItem[]> = {};
   caseData.items.forEach((item) => {
     const rarity = item.rarity || 'unknown';
     if (!itemsByRarity[rarity]) {
@@ -256,7 +270,7 @@ export default async function CaseDetailPage({
         {/* Items Grid */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">
-            Case Contents ({caseData.items.length})
+            Case Contents ({caseData.itemCount} skins, {caseData.totalVariants} variants)
           </h2>
 
           {caseData.items.length > 0 ? (
@@ -264,34 +278,10 @@ export default async function CaseDetailPage({
               {/* Show all items in single grid (already sorted by rarity from API) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {caseData.items.map((item) => (
-                  <div key={item.id} className="relative">
-                    {/* Special Item Badge */}
-                    {item.isSpecialItem && (
-                      <div className="absolute top-2 right-2 z-10 bg-yellow-500 text-black text-xs font-bold px-2 py-1 rounded">
-                        RARE
-                      </div>
-                    )}
-
-                    <ItemCard
-                      item={{
-                        id: item.id,
-                        name: item.name,
-                        display_name: item.displayName,
-                        rarity: item.rarity,
-                        type: item.type,
-                        image_url: item.imageUrl,
-                        image_url_fallback: item.imageUrlFallback,
-                      }}
-                    />
-
-                    {/* Drop Probability Display */}
-                    <div className="mt-2 text-center">
-                      <div className="text-gray-400 text-xs">Drop Rate</div>
-                      <div className="text-orange-500 font-semibold">
-                        {item.dropProbability.toFixed(4)}%
-                      </div>
-                    </div>
-                  </div>
+                  <GroupedItemCard
+                    key={item.baseName}
+                    item={item}
+                  />
                 ))}
               </div>
 

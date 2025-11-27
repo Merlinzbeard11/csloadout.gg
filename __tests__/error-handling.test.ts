@@ -27,14 +27,17 @@ describe('Error Handling - Phase 1h', () => {
   let testItemId: string
 
   beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+
     // Create test user
     const testUser = await prisma.user.create({
       data: {
-        steam_id: 'test_error_handling',
+        steam_id: `test_error_handling_${Date.now()}`,
         persona_name: 'ErrorTester',
         profile_url: 'https://steamcommunity.com/id/errortester',
         avatar: 'https://example.com/avatar.png',
-        email: 'error@example.com',
+        email: `error_${Date.now()}@example.com`,
         notification_email_enabled: true,
         notification_push_enabled: true
       }
@@ -42,9 +45,10 @@ describe('Error Handling - Phase 1h', () => {
     testUserId = testUser.id
 
     // Create test item
+    const timestamp = Date.now()
     const testItem = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
+        name: `AK-47 | Redline (Field-Tested) ${timestamp}`,
         display_name: 'AK-47 | Redline (Field-Tested)',
         search_name: 'ak47redlinefieldtested',
         type: 'skin',

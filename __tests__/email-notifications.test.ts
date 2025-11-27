@@ -21,25 +21,23 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
 describe('Email Notification Service - Phase 1e', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemId: string
   let testAlertId: string
 
   beforeEach(async () => {
-    // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
 
     // Create test user with email
     const testUser = await prisma.user.create({
       data: {
-        steam_id: 'test_email_notifications',
+        steam_id: `test_email_notifications_${uniqueId()}`,
         persona_name: 'EmailTester',
         profile_url: 'https://steamcommunity.com/id/emailtester',
         avatar: 'https://example.com/avatar.png',
-        email: 'user@example.com',
+        email: `user-${uniqueId()}@example.com`,
         notification_email_enabled: true
       }
     })
@@ -48,9 +46,9 @@ describe('Email Notification Service - Phase 1e', () => {
     // Create test item
     const testItem = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
-        display_name: 'AK-47 | Redline (Field-Tested)',
-        search_name: 'ak47redlinefieldtested',
+        name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        display_name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        search_name: `ak47redlinefieldtested${uniqueId()}`,
         type: 'skin',
         weapon_type: 'AK-47',
         rarity: 'classified',
@@ -230,10 +228,11 @@ describe('Email Notification Service - Phase 1e', () => {
    * And suppression should be logged
    */
   test('should NOT send email if user is on suppression list', async () => {
-    // Arrange: Add user to suppression list
+    // Arrange: Get current user email and add to suppression list
+    const user = await prisma.user.findUnique({ where: { id: testUserId } })
     await prisma.emailSuppressionList.create({
       data: {
-        email: 'user@example.com',
+        email: user!.email!,
         reason: 'user_unsubscribed',
         suppressed_at: new Date()
       }
@@ -244,7 +243,7 @@ describe('Email Notification Service - Phase 1e', () => {
 
     // Act: Attempt to send email
     const result = await emailService.sendPriceAlertEmail({
-      to: 'user@example.com',
+      to: user!.email!,
       itemName: 'AK-47 | Redline (Field-Tested)',
       targetPrice: 8.00,
       triggeredPrice: 7.95,

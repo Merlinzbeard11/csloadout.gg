@@ -30,9 +30,16 @@ type InventoryImportButtonProps = {
 }
 
 describe('InventoryImportButton Component', () => {
-  beforeEach(() => {
-    // Clear all mocks before each test
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
     global.fetch = jest.fn() as any
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   describe('Initial Render', () => {

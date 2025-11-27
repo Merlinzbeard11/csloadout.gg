@@ -36,20 +36,21 @@ describe('Alert History - Phase 1i', () => {
     // Create test user
     const testUser = await prisma.user.create({
       data: {
-        steam_id: 'test_alert_history',
+        steam_id: `test_alert_history_${Date.now()}`,
         persona_name: 'HistoryTester',
         profile_url: 'https://steamcommunity.com/id/historytester',
         avatar: 'https://example.com/avatar.png',
-        email: 'history@example.com',
+        email: `history_${Date.now()}@example.com`,
         notification_email_enabled: true
       }
     })
     testUserId = testUser.id
 
     // Create test item
+    const timestamp = Date.now()
     const testItem = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
+        name: `AK-47 | Redline (Field-Tested) ${timestamp}`,
         display_name: 'AK-47 | Redline (Field-Tested)',
         search_name: 'ak47redlinefieldtested',
         type: 'skin',

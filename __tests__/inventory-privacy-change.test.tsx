@@ -42,12 +42,7 @@ describe('Privacy Change Detection (TDD - Iteration 19)', () => {
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
@@ -111,8 +106,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show privacy warning
     expect(screen.getByText(/inventory is now private/i)).toBeInTheDocument()
@@ -134,8 +128,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should still show cached inventory stats
     expect(screen.getByText('247 items')).toBeInTheDocument()
@@ -158,8 +151,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show last synced timestamp
     expect(screen.getByText(/last synced.*2 days ago/i)).toBeInTheDocument()
@@ -183,8 +175,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should have orange warning banner
     const warningBanner = container.querySelector('.bg-orange-50')
@@ -208,8 +199,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should NOT show privacy warning
     expect(screen.queryByText(/inventory is now private/i)).not.toBeInTheDocument()
@@ -231,8 +221,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show normal timestamp without privacy indicator
     expect(screen.getByText(/last synced.*1 hour ago/i)).toBeInTheDocument()

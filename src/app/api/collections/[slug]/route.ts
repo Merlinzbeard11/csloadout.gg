@@ -31,16 +31,63 @@ import { prisma } from '@/lib/prisma';
 // Force dynamic rendering (uses dynamic route parameters which require dynamic mode)
 export const dynamic = 'force-dynamic';
 
-// Rarity sort order (highest to lowest)
+// Rarity sort order (highest to lowest) - CS2 standard names
 const RARITY_ORDER: Record<string, number> = {
-  contraband: 1,
-  covert: 2,
-  classified: 3,
-  restricted: 4,
-  milspec: 5,
-  industrial: 6,
-  consumer: 7,
+  contraband: 1,  // Gold - Knives, Gloves
+  covert: 2,      // Red
+  classified: 3,  // Pink
+  restricted: 4,  // Purple
+  milspec: 5,     // Blue
+  industrial: 6,  // Light Blue
+  consumer: 7,    // Gray
 };
+
+/**
+ * Extract base weapon name by removing prefixes (StatTrak™, Souvenir) and wear condition
+ * "StatTrak™ AK-47 | Redline (Field-Tested)" -> "AK-47 | Redline"
+ */
+function getBaseWeaponName(name: string): string {
+  let baseName = name;
+
+  // Remove StatTrak™ prefix
+  baseName = baseName.replace(/^StatTrak™\s+/i, '');
+  // Remove Souvenir prefix
+  baseName = baseName.replace(/^Souvenir\s+/i, '');
+  // Remove wear condition in parentheses at the end
+  baseName = baseName.replace(/\s*\((Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred)\)\s*$/i, '');
+
+  return baseName.trim();
+}
+
+/**
+ * Generate URL-friendly slug from base weapon name
+ * "AWP | Printstream" -> "awp-printstream"
+ */
+function generateSlug(baseName: string): string {
+  return baseName
+    .toLowerCase()
+    .replace(/\s*\|\s*/g, '-') // Replace " | " with "-"
+    .replace(/[^a-z0-9-]/g, '-') // Replace non-alphanumeric with hyphens
+    .replace(/-+/g, '-') // Collapse multiple hyphens
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+}
+
+/**
+ * Determine variant type from item name
+ */
+function getVariantType(name: string): 'normal' | 'stattrak' | 'souvenir' {
+  if (name.startsWith('StatTrak™')) return 'stattrak';
+  if (name.startsWith('Souvenir')) return 'souvenir';
+  return 'normal';
+}
+
+/**
+ * Extract wear condition from item name
+ */
+function getWearCondition(name: string): string | null {
+  const wearMatch = name.match(/\((Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred)\)/i);
+  return wearMatch ? wearMatch[1] : null;
+}
 
 export async function GET(
   request: NextRequest,
@@ -112,12 +159,98 @@ export async function GET(
       );
     }
 
-    // Sort items by rarity (highest first)
-    const sortedItems = collection.items.sort((a, b) => {
+    // Group items by base weapon name (without StatTrak/Souvenir prefix and wear condition)
+    const groupedItems = new Map<string, {
+      baseName: string;
+      rarity: string | null;
+      type: string;
+      weaponType: string | null;
+      imageUrl: string;
+      imageUrlFallback: string | null;
+      variants: Array<{
+        id: string;
+        name: string;
+        displayName: string | null;
+        variantType: 'normal' | 'stattrak' | 'souvenir';
+        wear: string | null;
+        imageUrl: string;
+        imageUrlFallback: string | null;
+      }>;
+    }>();
+
+    for (const item of collection.items) {
+      const baseName = getBaseWeaponName(item.name);
+      const variantType = getVariantType(item.name);
+      const wear = getWearCondition(item.name);
+
+      if (!groupedItems.has(baseName)) {
+        // Use the first item's image as the representative image (prefer normal variant)
+        groupedItems.set(baseName, {
+          baseName,
+          rarity: item.rarity,
+          type: item.type,
+          weaponType: item.weapon_type,
+          imageUrl: item.image_url,
+          imageUrlFallback: item.image_url_fallback,
+          variants: [],
+        });
+      }
+
+      const group = groupedItems.get(baseName)!;
+
+      // Update image to prefer normal variant over StatTrak/Souvenir
+      if (variantType === 'normal' && group.variants.length > 0) {
+        group.imageUrl = item.image_url;
+        group.imageUrlFallback = item.image_url_fallback;
+      }
+
+      group.variants.push({
+        id: item.id,
+        name: item.name,
+        displayName: item.display_name,
+        variantType,
+        wear,
+        imageUrl: item.image_url,
+        imageUrlFallback: item.image_url_fallback,
+      });
+    }
+
+    // Convert to array and sort by rarity (highest first), then alphabetically
+    const sortedItems = Array.from(groupedItems.values()).sort((a, b) => {
       const orderA = a.rarity ? RARITY_ORDER[a.rarity] || 999 : 999;
       const orderB = b.rarity ? RARITY_ORDER[b.rarity] || 999 : 999;
-      return orderA - orderB;
+
+      // Primary sort: rarity (highest first)
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+
+      // Secondary sort: alphabetically by base name
+      return a.baseName.toLowerCase().localeCompare(b.baseName.toLowerCase());
     });
+
+    // Sort variants within each group (normal first, then by wear quality)
+    const WEAR_ORDER: Record<string, number> = {
+      'Factory New': 1,
+      'Minimal Wear': 2,
+      'Field-Tested': 3,
+      'Well-Worn': 4,
+      'Battle-Scarred': 5,
+    };
+
+    for (const item of sortedItems) {
+      item.variants.sort((a, b) => {
+        // Sort by variant type (normal > stattrak > souvenir)
+        const typeOrder = { normal: 1, stattrak: 2, souvenir: 3 };
+        if (typeOrder[a.variantType] !== typeOrder[b.variantType]) {
+          return typeOrder[a.variantType] - typeOrder[b.variantType];
+        }
+        // Then by wear condition
+        const wearA = a.wear ? WEAR_ORDER[a.wear] || 999 : 999;
+        const wearB = b.wear ? WEAR_ORDER[b.wear] || 999 : 999;
+        return wearA - wearB;
+      });
+    }
 
     // Calculate total collection value
     // Note: In production, this would use real price data
@@ -135,18 +268,21 @@ export async function GET(
       isDiscontinued: collection.is_discontinued,
       discontinuedDate: collection.discontinued_date?.toISOString() || null,
       items: sortedItems.map((item) => ({
-        id: item.id,
-        name: item.name,
-        displayName: item.display_name,
-        searchName: item.search_name,
+        baseName: item.baseName,
+        slug: generateSlug(item.baseName),
         rarity: item.rarity,
         type: item.type,
-        imageUrl: item.image_url,
-        imageUrlFallback: item.image_url_fallback,
-        weaponType: item.weapon_type,
+        weaponType: item.weaponType,
+        imageUrl: item.imageUrl,
+        imageUrlFallback: item.imageUrlFallback,
+        variantCount: item.variants.length,
+        hasStatTrak: item.variants.some(v => v.variantType === 'stattrak'),
+        hasSouvenir: item.variants.some(v => v.variantType === 'souvenir'),
+        variants: item.variants,
       })),
       totalValue,
       itemCount: sortedItems.length,
+      totalVariants: collection.items.length,
     };
 
     return NextResponse.json(response);

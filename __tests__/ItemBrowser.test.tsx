@@ -65,6 +65,9 @@ interface ItemBrowserProps {
 }
 
 describe('ItemBrowser Client Component', () => {
+  // Generate unique IDs for test data
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
   const mockItems: Item[] = [
     {
       id: 'item-1',
@@ -105,8 +108,13 @@ describe('ItemBrowser Client Component', () => {
     onItemSelect: jest.fn()
   }
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
     jest.clearAllMocks()
+  })
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction()
   })
 
   // ============================================================================

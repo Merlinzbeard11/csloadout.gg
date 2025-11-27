@@ -54,9 +54,10 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
     testUserId = testUser.id
 
     // Create test item
+    const timestamp = Date.now()
     const testItem = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
+        name: `AK-47 | Redline (Field-Tested) ${timestamp}`,
         display_name: 'AK-47 | Redline (Field-Tested)',
         search_name: 'ak47redlinefieldtested',
         type: 'skin',
@@ -278,12 +279,6 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
 
   describe('Alert Triggering Logic', () => {
     beforeEach(async () => {
-    // Start transaction for test isolation
-    await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
-    jest.clearAllMocks()
-
       const alert = await prisma.priceAlert.create({
         data: {
           user_id: testUserId,
@@ -487,12 +482,6 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
 
   describe('Alert Management', () => {
     beforeEach(async () => {
-    // Start transaction for test isolation
-    await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
-    jest.clearAllMocks()
-
       const alert = await prisma.priceAlert.create({
         data: {
           user_id: testUserId,
@@ -635,12 +624,6 @@ describe('Feature 09 Phase 1: Price Alerts', () => {
 
   describe('Alert History', () => {
     beforeEach(async () => {
-    // Start transaction for test isolation
-    await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
-    jest.clearAllMocks()
-
       const alert = await prisma.priceAlert.create({
         data: {
           user_id: testUserId,

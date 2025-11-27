@@ -31,6 +31,9 @@ describe('Phase 7a: Publish Toggle Server Action', () => {
   let otherUserId: string
 
   beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+
     // Create test user
     const testUser = await prisma.user.create({
       data: {
@@ -68,12 +71,7 @@ describe('Phase 7a: Publish Toggle Server Action', () => {
   })
 
   afterEach(() => {
-    // Rollback transaction - automatic cleanup, no manual deletion needed
     global.prismaTestHelper.rollbackTransaction()
-  })
-    await prisma.user.deleteMany({
-      where: { id: { in: [testUserId, otherUserId] } }
-    })
   })
 
   describe('Slug Generation', () => {

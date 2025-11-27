@@ -36,23 +36,19 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Cache TTL Enforcement (TDD - Iteration 16)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testInventoryId: string
 
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Cache Test User',
         profile_url: 'https://steamcommunity.com/id/cachetest',
         avatar: 'https://example.com/avatar.jpg'
@@ -64,7 +60,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-cache-76561198123456789'
+        steamId: user.steam_id
       }
     })
   })
@@ -81,7 +77,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     const inventory = await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 247,
         total_value: 1234.56,
         sync_status: 'success',
@@ -92,8 +88,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     })
     testInventoryId = inventory.id
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show last synced timestamp
     expect(screen.getByText(/last synced.*3 hours ago/i)).toBeInTheDocument()
@@ -105,7 +100,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 150,
         total_value: 500.00,
         sync_status: 'success',
@@ -115,8 +110,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/last synced.*1 hour ago/i)).toBeInTheDocument()
   })
@@ -127,7 +121,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 200,
         total_value: 750.00,
         sync_status: 'success',
@@ -137,8 +131,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/last synced.*just now/i)).toBeInTheDocument()
   })
@@ -149,7 +142,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 300,
         total_value: 1500.00,
         sync_status: 'success',
@@ -159,8 +152,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/last synced.*5 hours ago/i)).toBeInTheDocument()
   })
@@ -171,7 +163,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 100,
         total_value: 300.00,
         sync_status: 'success',
@@ -181,8 +173,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/last synced.*30 minutes ago/i)).toBeInTheDocument()
   })
@@ -193,7 +184,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 180,
         total_value: 650.00,
         sync_status: 'success',
@@ -203,8 +194,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/last synced.*7 hours ago/i)).toBeInTheDocument()
   })
@@ -215,7 +205,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-cache-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 50,
         total_value: 100.00,
         sync_status: 'success',
@@ -225,15 +215,13 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/last synced.*3 days ago/i)).toBeInTheDocument()
   })
 
   it('should NOT display last synced indicator when no inventory exists', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show empty state, NOT last synced indicator
     expect(screen.queryByText(/last synced/i)).not.toBeInTheDocument()

@@ -13,24 +13,42 @@ import { importItems, fetchByMykelAPI, type ByMykelItem } from '@/lib/import-ser
 
 const HAS_DATABASE = !!process.env.DATABASE_URL;
 
-const mockItems: ByMykelItem[] = [
-  {
-    name: 'AK-47 | Case Hardened',
-    rarity: 'classified',
-    type: 'skin',
-    weapon_type: 'AK-47',
-    image: 'https://example.com/image.png',
-  },
-  {
-    name: 'AWP | Dragon Lore',
-    rarity: 'covert',
-    type: 'skin',
-    weapon_type: 'AWP',
-    image: 'https://example.com/awp.png',
-  },
-];
-
 describe('ByMykel API Data Import', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
+
+  let mockItems: ByMykelItem[];
+
+  beforeEach(async () => {
+    if (HAS_DATABASE) {
+      await global.prismaTestHelper.startTransaction()
+    }
+    jest.clearAllMocks()
+
+    // Create fresh mock items with unique IDs for each test
+    mockItems = [
+      {
+        name: `AK-47 | Case Hardened ${uniqueId()}`,
+        rarity: 'classified',
+        type: 'skin',
+        weapon_type: 'AK-47',
+        image: 'https://example.com/image.png',
+      },
+      {
+        name: `AWP | Dragon Lore ${uniqueId()}`,
+        rarity: 'covert',
+        type: 'skin',
+        weapon_type: 'AWP',
+        image: 'https://example.com/awp.png',
+      },
+    ];
+  })
+
+  afterEach(() => {
+    if (HAS_DATABASE) {
+      global.prismaTestHelper.rollbackTransaction()
+    }
+  })
+
   describe('fetchByMykelAPI (unit test)', () => {
     it('should return array from GitHub API', async () => {
       const items = await fetchByMykelAPI();

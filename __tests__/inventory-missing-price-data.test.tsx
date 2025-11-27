@@ -37,21 +37,18 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemId: string
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Missing Price Test User',
         profile_url: 'https://steamcommunity.com/id/missingpricetest',
         avatar: 'https://example.com/avatar.jpg'
@@ -62,7 +59,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     // Create test item (AWP | Safari Mesh)
     const item = await prisma.item.create({
       data: {
-        name: 'test-awp-safari-mesh-bs',
+        name: `test-awp-safari-mesh-${uniqueId()}`,
         display_name: 'AWP | Safari Mesh (Battle-Scarred)',
         search_name: 'awp safari mesh battle scarred',
         type: 'weapon',
@@ -76,7 +73,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-missing-price-76561198777777777'
+        steamId: user.steam_id
       }
     })
   })
@@ -93,7 +90,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     const inventory = await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 0, // No price data
         sync_status: 'success',
@@ -105,7 +102,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AWP | Safari Mesh (Battle-Scarred)',
             current_value: 0, // No price available
             wear: 'battle_scarred',
@@ -117,8 +114,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Item should display $0.00
     expect(screen.getByText('$0.00')).toBeInTheDocument()
@@ -130,7 +126,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 0,
         sync_status: 'success',
@@ -142,7 +138,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AWP | Safari Mesh (Battle-Scarred)',
             current_value: 0,
             wear: 'battle_scarred',
@@ -154,8 +150,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/price data unavailable/i)).toBeInTheDocument()
   })
@@ -166,7 +161,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 0,
         sync_status: 'success',
@@ -178,7 +173,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AWP | Safari Mesh (Battle-Scarred)',
             current_value: 0,
             wear: 'battle_scarred',
@@ -190,8 +185,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText(/item.*imported.*\$0.*value/i)).toBeInTheDocument()
   })
@@ -202,7 +196,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     const inventory = await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 0,
         sync_status: 'success', // Import successful
@@ -214,7 +208,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AWP | Safari Mesh (Battle-Scarred)',
             current_value: 0,
             wear: 'battle_scarred',
@@ -237,7 +231,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 0,
         sync_status: 'success',
@@ -249,7 +243,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AWP | Safari Mesh (Battle-Scarred)',
             current_value: 0,
             wear: 'battle_scarred',
@@ -261,8 +255,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Item name should still be visible
     expect(screen.getByText(/AWP.*Safari Mesh.*Battle-Scarred/i)).toBeInTheDocument()
@@ -274,7 +267,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     // Create second item for comparison
     const lowValueItem = await prisma.item.create({
       data: {
-        name: 'test-p250-sand-dune',
+        name: `test-p250-sand-dune-${uniqueId()}`,
         display_name: 'P250 | Sand Dune',
         search_name: 'p250 sand dune',
         type: 'weapon',
@@ -286,7 +279,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: user.steam_id,
         total_items: 2,
         total_value: 0.03,
         sync_status: 'success',
@@ -300,7 +293,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
               item: {
                 connect: { id: testItemId }
               },
-              steam_asset_id: '12345678901',
+              steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AWP | Safari Mesh (Battle-Scarred)',
               current_value: 0,
               wear: 'battle_scarred',
@@ -313,7 +306,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
               item: {
                 connect: { id: lowValueItem.id }
               },
-              steam_asset_id: '12345678902',
+              steam_asset_id: `asset-${uniqueId()}`,
               market_hash_name: 'P250 | Sand Dune (Battle-Scarred)',
               current_value: 0.03,
               wear: 'battle_scarred',
@@ -326,8 +319,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show warning for item without price data
     expect(screen.getByText(/price data unavailable/i)).toBeInTheDocument()
@@ -342,7 +334,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-missing-price-76561198777777777',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 0,
         sync_status: 'success',
@@ -354,7 +346,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AWP | Safari Mesh (Battle-Scarred)',
             current_value: 0,
             wear: 'battle_scarred',
@@ -366,8 +358,7 @@ describe('Missing Price Data Handling (TDD - Iteration 21)', () => {
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should have visual warning indicator (icon or badge)
     const warningIcon = container.querySelector('svg') // Warning icon

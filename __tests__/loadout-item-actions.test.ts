@@ -61,24 +61,21 @@ describe('Loadout Item Server Actions', () => {
   let testLoadoutId: string
   let testItemId: string
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
+  // Generate unique IDs for test data
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
 
-    // Clean up test data
-    await prisma.loadoutWeaponSkin.deleteMany({})
-    await prisma.loadout.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.item.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: 'test-steam-id' } })
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-id',
+        steam_id: `test-steam-id-${uniqueId()}`,
         persona_name: 'Test User',
         profile_url: 'https://steamcommunity.com/id/testuser',
         avatar: 'https://example.com/avatar.png',
-        email: 'test@example.com'
+        email: `test-${uniqueId()}@example.com`
       }
     })
     testUserId = user.id
@@ -104,9 +101,9 @@ describe('Loadout Item Server Actions', () => {
     // Create test item
     const item = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
-        display_name: 'AK-47 | Redline (Field-Tested)',
-        search_name: 'ak47redlinefieldtested',
+        name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        display_name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        search_name: `ak47redlinefieldtested${uniqueId()}`,
         type: 'skin',
         weapon_type: 'AK-47',
         rarity: 'classified',
@@ -339,9 +336,9 @@ describe('Loadout Item Server Actions', () => {
       // Create new item for replacement
       const newItem = await prisma.item.create({
         data: {
-          name: 'AK-47 | Asiimov (Field-Tested)',
-          display_name: 'AK-47 | Asiimov (Field-Tested)',
-          search_name: 'ak47asiimovfieldtested',
+          name: `AK-47 | Asiimov (Field-Tested) ${uniqueId()}`,
+          display_name: `AK-47 | Asiimov (Field-Tested) ${uniqueId()}`,
+          search_name: `ak47asiimovfieldtested${uniqueId()}`,
           type: 'skin',
           weapon_type: 'AK-47',
           rarity: 'covert',
@@ -382,9 +379,9 @@ describe('Loadout Item Server Actions', () => {
       // Create new item for replacement
       const newItem = await prisma.item.create({
         data: {
-          name: 'AK-47 | Asiimov (Field-Tested)',
-          display_name: 'AK-47 | Asiimov (Field-Tested)',
-          search_name: 'ak47asiimovfieldtested',
+          name: `AK-47 | Asiimov (Field-Tested) ${uniqueId()}`,
+          display_name: `AK-47 | Asiimov (Field-Tested) ${uniqueId()}`,
+          search_name: `ak47asiimovfieldtested${uniqueId()}`,
           type: 'skin',
           weapon_type: 'AK-47',
           rarity: 'covert',
@@ -621,9 +618,9 @@ describe('Loadout Item Server Actions', () => {
       // Create item without marketplace price
       const itemWithoutPrice = await prisma.item.create({
         data: {
-          name: 'M4A4 | Asiimov (Field-Tested)',
-          display_name: 'M4A4 | Asiimov (Field-Tested)',
-          search_name: 'm4a4asiimovfieldtested',
+          name: `M4A4 | Asiimov (Field-Tested) ${uniqueId()}`,
+          display_name: `M4A4 | Asiimov (Field-Tested) ${uniqueId()}`,
+          search_name: `m4a4asiimovfieldtested${uniqueId()}`,
           type: 'skin',
           weapon_type: 'M4A4',
           rarity: 'covert',

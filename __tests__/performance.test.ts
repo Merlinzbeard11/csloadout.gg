@@ -21,6 +21,7 @@ import { describe, test, expect, beforeEach, afterEach } from '@jest/globals'
 import { prisma } from '@/lib/prisma'
 
 describe('Performance Requirements - Phase 1j', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   /**
    * BDD Scenario: Price checker completes within time limit (line 288)
    * Given there are 10,000 active alerts
@@ -29,23 +30,32 @@ describe('Performance Requirements - Phase 1j', () => {
    * And database queries should use eager loading (no N+1)
    */
   describe('Price Checker Performance', () => {
+    beforeEach(async () => {
+      await global.prismaTestHelper.startTransaction()
+      jest.clearAllMocks()
+    })
+
+    afterEach(() => {
+      global.prismaTestHelper.rollbackTransaction()
+    })
+
     test('should use eager loading to prevent N+1 queries', async () => {
       // Create test data
       const testUser = await prisma.user.create({
         data: {
-          steam_id: 'test_performance',
+          steam_id: `test_performance_${uniqueId()}`,
           persona_name: 'PerfTester',
           profile_url: 'https://steamcommunity.com/id/perftester',
           avatar: 'https://example.com/avatar.png',
-          email: 'perf@example.com'
+          email: `perf-${uniqueId()}@example.com`
         }
       })
 
       const testItem = await prisma.item.create({
         data: {
-          name: 'AK-47 | Redline (Field-Tested)',
-          display_name: 'AK-47 | Redline (Field-Tested)',
-          search_name: 'ak47redlinefieldtested',
+          name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+          display_name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+          search_name: `ak47redlinefieldtested${uniqueId()}`,
           type: 'skin',
           weapon_type: 'AK-47',
           rarity: 'classified',
@@ -117,12 +127,6 @@ describe('Performance Requirements - Phase 1j', () => {
       expect(alerts[0].item.marketplace_prices).toBeDefined()
       expect(alerts[0].item.marketplace_prices.length).toBe(1)
       expect(alerts[0].user).toBeDefined()
-
-      // Cleanup
-      await prisma.marketplacePrice.deleteMany({})
-      await prisma.priceAlert.deleteMany({})
-      await prisma.item.deleteMany({})
-      await prisma.user.deleteMany({ where: { steam_id: 'test_performance' } })
     })
 
     test('should verify no N+1 problem in alert checker query', async () => {
@@ -132,11 +136,11 @@ describe('Performance Requirements - Phase 1j', () => {
 
       const testUser = await prisma.user.create({
         data: {
-          steam_id: 'test_n1_prevention',
+          steam_id: `test_n1_prevention_${uniqueId()}`,
           persona_name: 'N1Tester',
           profile_url: 'https://steamcommunity.com/id/n1tester',
           avatar: 'https://example.com/avatar.png',
-          email: 'n1@example.com'
+          email: `n1-${uniqueId()}@example.com`
         }
       })
 
@@ -144,9 +148,9 @@ describe('Performance Requirements - Phase 1j', () => {
       for (let i = 0; i < 5; i++) {
         const item = await prisma.item.create({
           data: {
-            name: `Test Item ${i}`,
-            display_name: `Test Item ${i}`,
-            search_name: `testitem${i}`,
+            name: `Test Item ${i} ${uniqueId()}`,
+            display_name: `Test Item ${i} ${uniqueId()}`,
+            search_name: `testitem${i}${uniqueId()}`,
             type: 'skin',
             weapon_type: 'AK-47',
             rarity: 'classified',
@@ -208,12 +212,6 @@ describe('Performance Requirements - Phase 1j', () => {
         expect(alert.item.marketplace_prices).toBeDefined()
         expect(alert.user).toBeDefined()
       })
-
-      // Cleanup
-      await prisma.marketplacePrice.deleteMany({})
-      await prisma.priceAlert.deleteMany({})
-      await prisma.item.deleteMany({})
-      await prisma.user.deleteMany({ where: { steam_id: 'test_n1_prevention' } })
     })
 
     test('should handle pagination for large alert sets', async () => {
@@ -222,19 +220,19 @@ describe('Performance Requirements - Phase 1j', () => {
 
       const testUser = await prisma.user.create({
         data: {
-          steam_id: 'test_pagination',
+          steam_id: `test_pagination_${uniqueId()}`,
           persona_name: 'PaginationTester',
           profile_url: 'https://steamcommunity.com/id/paginationtester',
           avatar: 'https://example.com/avatar.png',
-          email: 'pagination@example.com'
+          email: `pagination-${uniqueId()}@example.com`
         }
       })
 
       const testItem = await prisma.item.create({
         data: {
-          name: 'Test Item',
-          display_name: 'Test Item',
-          search_name: 'testitem',
+          name: `Test Item ${uniqueId()}`,
+          display_name: `Test Item ${uniqueId()}`,
+          search_name: `testitem${uniqueId()}`,
           type: 'skin',
           weapon_type: 'AK-47',
           rarity: 'classified',
@@ -271,11 +269,6 @@ describe('Performance Requirements - Phase 1j', () => {
       expect(batch1.length).toBe(50)
       expect(batch2.length).toBe(50)
       expect(batch1[0].id).not.toBe(batch2[0].id)
-
-      // Cleanup
-      await prisma.priceAlert.deleteMany({})
-      await prisma.item.deleteMany({})
-      await prisma.user.deleteMany({ where: { steam_id: 'test_pagination' } })
     })
   })
 
@@ -287,6 +280,15 @@ describe('Performance Requirements - Phase 1j', () => {
    * And query should complete in under 50ms
    */
   describe('BRIN Index for Time-Series Queries', () => {
+    beforeEach(async () => {
+      await global.prismaTestHelper.startTransaction()
+      jest.clearAllMocks()
+    })
+
+    afterEach(() => {
+      global.prismaTestHelper.rollbackTransaction()
+    })
+
     test('should document BRIN index usage for triggered_at column', async () => {
       // BRIN index is defined in Prisma schema
       // AlertTrigger model has: @@index([triggered_at]) with comment "use BRIN for performance"
@@ -310,19 +312,19 @@ describe('Performance Requirements - Phase 1j', () => {
     test('should query recent triggers efficiently', async () => {
       const testUser = await prisma.user.create({
         data: {
-          steam_id: 'test_brin',
+          steam_id: `test_brin_${uniqueId()}`,
           persona_name: 'BRINTester',
           profile_url: 'https://steamcommunity.com/id/brintester',
           avatar: 'https://example.com/avatar.png',
-          email: 'brin@example.com'
+          email: `brin-${uniqueId()}@example.com`
         }
       })
 
       const testItem = await prisma.item.create({
         data: {
-          name: 'Test Item',
-          display_name: 'Test Item',
-          search_name: 'testitem',
+          name: `Test Item ${uniqueId()}`,
+          display_name: `Test Item ${uniqueId()}`,
+          search_name: `testitem${uniqueId()}`,
           type: 'skin',
           weapon_type: 'AK-47',
           rarity: 'classified',
@@ -387,12 +389,6 @@ describe('Performance Requirements - Phase 1j', () => {
 
       // Assert: Only recent triggers returned
       expect(recentTriggers.length).toBeGreaterThan(0)
-
-      // Cleanup
-      await prisma.alertTrigger.deleteMany({})
-      await prisma.priceAlert.deleteMany({})
-      await prisma.item.deleteMany({})
-      await prisma.user.deleteMany({ where: { steam_id: 'test_brin' } })
     })
   })
 })

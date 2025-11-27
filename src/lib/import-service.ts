@@ -141,13 +141,33 @@ export async function fetchByMykelAPI(): Promise<ByMykelItem[]> {
 }
 
 /**
+ * Map wear name to database wear value and display name
+ * ByMykel API uses names like "Factory New", "Minimal Wear", etc.
+ */
+const WEAR_NAME_MAPPING: Record<string, { dbValue: string; displayName: string }> = {
+  'Factory New': { dbValue: 'factory_new', displayName: 'Factory New' },
+  'Minimal Wear': { dbValue: 'minimal_wear', displayName: 'Minimal Wear' },
+  'Field-Tested': { dbValue: 'field_tested', displayName: 'Field-Tested' },
+  'Well-Worn': { dbValue: 'well_worn', displayName: 'Well-Worn' },
+  'Battle-Scarred': { dbValue: 'battle_scarred', displayName: 'Battle-Scarred' },
+};
+
+/**
+ * Get wear info from ByMykel wear data
+ * Uses name-based matching since ByMykel IDs vary
+ */
+function getWearInfo(wearName: string): { dbValue: string; displayName: string } {
+  return WEAR_NAME_MAPPING[wearName] || { dbValue: 'none', displayName: 'None' };
+}
+
+/**
  * Imports items to database using upsert logic
+ * Creates SEPARATE records for each wear variant (5 per skin)
  *
- * For each item:
- * 1. Normalizes name using normalizeItemName()
- * 2. Sets display_name to preserve original formatting
- * 3. Sets search_name to normalized value
- * 4. Upserts using composite unique key [name, quality, wear]
+ * For each item with wears:
+ * 1. Creates market_hash_name format: "AK-47 | Redline (Field-Tested)"
+ * 2. Creates one record per wear variant
+ * 3. Upserts using composite unique key [name, quality, wear]
  *
  * @param items - Array of items from ByMykel API
  * @returns Import statistics (processed, created, updated, failed)
@@ -177,61 +197,88 @@ export async function importItems(items: ByMykelItem[]): Promise<ImportResult> {
                   item.category?.id?.includes('glove') ? 'gloves' :
                   item.category?.id?.includes('agent') ? 'agent' : 'skin';
 
-      // Determine quality from stattrak/souvenir flags
-      const quality = item.stattrak ? 'stattrak' : item.souvenir ? 'souvenir' : 'normal';
+      // Build list of quality variants to create
+      // Always create 'normal' variant, plus 'stattrak' if item supports it
+      const qualities: string[] = ['normal'];
+      if (item.stattrak) {
+        qualities.push('stattrak');
+      }
+      if (item.souvenir) {
+        qualities.push('souvenir');
+      }
 
-      // For now, we'll import base items without wear variants
-      // Full wear handling will be added in future iteration
-      const wear = 'none';
+      // Get wears from API, or use 'none' for items without wear (agents, stickers, etc.)
+      const wears = item.wears && item.wears.length > 0 ? item.wears : [{ id: 'none', name: 'None' }];
 
-      // Upsert item using composite unique key [name, quality, wear]
-      const result = await prisma.item.upsert({
-        where: {
-          name_quality_wear: {
-            name: item.name,
-            quality,
-            wear,
-          },
-        },
-        update: {
-          display_name: item.name,
-          search_name: normalizeItemName(item.name),
-          description: item.description || null,
-          rarity: item.rarity?.id || null,
-          weapon_type: item.weapon?.name || null,
-          image_url: item.image,
-          image_url_fallback: null, // ByMykel API doesn't provide fallback
-          wear_min: item.min_float || null,
-          wear_max: item.max_float || null,
-          pattern_count: null, // Not provided in current API
-          updated_at: new Date(),
-        },
-        create: {
-          name: item.name,
-          display_name: item.name,
-          search_name: normalizeItemName(item.name),
-          description: item.description || null,
-          type,
-          rarity: item.rarity?.id || null,
-          quality,
-          wear,
-          weapon_type: item.weapon?.name || null,
-          image_url: item.image,
-          image_url_fallback: null,
-          wear_min: item.min_float || null,
-          wear_max: item.max_float || null,
-          pattern_count: null,
-        },
-      });
+      // Create one record per wear AND quality variant
+      for (const wearData of wears) {
+        for (const quality of qualities) {
+          try {
+            const wearInfo = getWearInfo(wearData.name);
+            const wear = wearInfo.dbValue;
 
-      stats.processed++;
+            // Build market_hash_name format: "AK-47 | Redline (Field-Tested)"
+            // For StatTrak: "StatTrak™ AK-47 | Redline (Field-Tested)"
+            const baseName = quality === 'stattrak' ? `StatTrak™ ${item.name}` :
+                            quality === 'souvenir' ? `Souvenir ${item.name}` : item.name;
+            const marketHashName = wear !== 'none'
+              ? `${baseName} (${wearInfo.displayName})`
+              : baseName;
 
-      // Check if created or updated by comparing timestamps
-      const isNew = result.created_at.getTime() === result.updated_at.getTime();
-      if (isNew) {
-        stats.created++;
-      } else {
-        stats.updated++;
+            // Upsert item using composite unique key [name, quality, wear]
+            const result = await prisma.item.upsert({
+              where: {
+                name_quality_wear: {
+                  name: marketHashName,
+                  quality,
+                  wear,
+                },
+              },
+            update: {
+              display_name: marketHashName,
+              search_name: normalizeItemName(marketHashName),
+              description: item.description || null,
+              rarity: item.rarity?.id || null,
+              weapon_type: item.weapon?.name || null,
+              image_url: item.image,
+              image_url_fallback: null,
+              wear_min: item.min_float || null,
+              wear_max: item.max_float || null,
+              pattern_count: null,
+              updated_at: new Date(),
+            },
+            create: {
+              name: marketHashName,
+              display_name: marketHashName,
+              search_name: normalizeItemName(marketHashName),
+              description: item.description || null,
+              type,
+              rarity: item.rarity?.id || null,
+              quality,
+              wear,
+              weapon_type: item.weapon?.name || null,
+              image_url: item.image,
+              image_url_fallback: null,
+              wear_min: item.min_float || null,
+              wear_max: item.max_float || null,
+              pattern_count: null,
+            },
+          });
+
+          stats.processed++;
+
+          // Check if created or updated by comparing timestamps
+          const isNew = result.created_at.getTime() === result.updated_at.getTime();
+          if (isNew) {
+            stats.created++;
+          } else {
+            stats.updated++;
+          }
+        } catch (wearError) {
+            console.error(`[Import] Failed to import wear/quality variant: ${item.name} (${wearData.name}, ${quality})`, wearError);
+            stats.failed++;
+          }
+        }
       }
     } catch (error) {
       console.error(`[Import] Failed to import item: ${item.name}`, error);
@@ -718,19 +765,29 @@ export async function importCollections(collections: ByMykelCollection[]): Promi
       if (collection.contains && collection.contains.length > 0) {
         for (const item of collection.contains) {
           try {
-            // Find item by name (items were imported earlier)
-            const itemRecord = await prisma.item.findFirst({
+            // Find all items that start with this base name (handles wear variants)
+            // API returns "AK-47 | Aquamarine Revenge" but DB has "AK-47 | Aquamarine Revenge (Field-Tested)"
+            const itemRecords = await prisma.item.findMany({
               where: {
-                name: item.name,
+                OR: [
+                  { name: item.name }, // Exact match for items without wear
+                  { name: { startsWith: `${item.name} (` } }, // Wear variants
+                  { name: { startsWith: `StatTrak™ ${item.name}` } }, // StatTrak variants
+                  { name: { startsWith: `Souvenir ${item.name}` } }, // Souvenir variants
+                ],
               },
             });
 
-            if (itemRecord) {
-              // Update item with collection_id
+            // Update all matching items with collection_id
+            for (const itemRecord of itemRecords) {
               await prisma.item.update({
                 where: { id: itemRecord.id },
                 data: { collection_id: collectionRecord.id },
               });
+            }
+
+            if (itemRecords.length > 0) {
+              console.log(`[Import] Linked ${itemRecords.length} variants of ${item.name} to ${collection.name}`);
             }
           } catch (error) {
             console.error(`[Import] Failed to link item ${item.name} to collection ${collection.name}:`, error);
@@ -880,20 +937,32 @@ export async function importCases(cases: ByMykelCase[]): Promise<ImportResult> {
 
           for (const item of items) {
             try {
-              const itemRecord = await prisma.item.findFirst({
-                where: { name: item.name },
+              // Find ALL items that start with this base name (all wear variants)
+              // API returns "AK-47 | Redline", DB has "AK-47 | Redline (Factory New)", etc.
+              const matchingItems = await prisma.item.findMany({
+                where: {
+                  OR: [
+                    { name: item.name }, // Exact match (for items without wears)
+                    { name: { startsWith: `${item.name} (` } }, // Normal variants with wear
+                    { name: { startsWith: `StatTrak™ ${item.name} (` } }, // StatTrak variants
+                    { name: { startsWith: `Souvenir ${item.name} (` } }, // Souvenir variants
+                  ],
+                },
               });
 
-              if (itemRecord && !linkedItemIds.has(itemRecord.id)) {
-                await prisma.caseItem.create({
-                  data: {
-                    case_id: caseRecord.id,
-                    item_id: itemRecord.id,
-                    drop_probability: probability,
-                    is_special_item: false,
-                  },
-                });
-                linkedItemIds.add(itemRecord.id);
+              // Link all found variants
+              for (const itemRecord of matchingItems) {
+                if (!linkedItemIds.has(itemRecord.id)) {
+                  await prisma.caseItem.create({
+                    data: {
+                      case_id: caseRecord.id,
+                      item_id: itemRecord.id,
+                      drop_probability: probability,
+                      is_special_item: false,
+                    },
+                  });
+                  linkedItemIds.add(itemRecord.id);
+                }
               }
             } catch (error) {
               console.error(`[Import] Failed to link item ${item.name} to case ${caseData.name}:`, error);
@@ -908,20 +977,31 @@ export async function importCases(cases: ByMykelCase[]): Promise<ImportResult> {
 
         for (const item of caseData.contains_rare) {
           try {
-            const itemRecord = await prisma.item.findFirst({
-              where: { name: item.name },
+            // Find ALL variants of this knife/glove (all finishes and wears)
+            // API returns "★ Navaja Knife", DB has "★ Navaja Knife | Urban Masked (Factory New)", etc.
+            const matchingItems = await prisma.item.findMany({
+              where: {
+                OR: [
+                  { name: item.name }, // Exact match (base knife without finish)
+                  { name: { startsWith: `${item.name} |` } }, // Knife with finish (e.g., "★ Navaja Knife | Urban Masked")
+                  { name: { startsWith: `StatTrak™ ${item.name} |` } }, // StatTrak variants
+                ],
+              },
             });
 
-            if (itemRecord && !linkedItemIds.has(itemRecord.id)) {
-              await prisma.caseItem.create({
-                data: {
-                  case_id: caseRecord.id,
-                  item_id: itemRecord.id,
-                  drop_probability: probability,
-                  is_special_item: true,
-                },
-              });
-              linkedItemIds.add(itemRecord.id);
+            // Link all found variants
+            for (const itemRecord of matchingItems) {
+              if (!linkedItemIds.has(itemRecord.id)) {
+                await prisma.caseItem.create({
+                  data: {
+                    case_id: caseRecord.id,
+                    item_id: itemRecord.id,
+                    drop_probability: probability,
+                    is_special_item: true,
+                  },
+                });
+                linkedItemIds.add(itemRecord.id);
+              }
             }
           } catch (error) {
             console.error(`[Import] Failed to link rare item ${item.name} to case ${caseData.name}:`, error);

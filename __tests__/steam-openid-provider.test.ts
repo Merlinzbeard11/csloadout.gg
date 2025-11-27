@@ -18,6 +18,15 @@ describe('Steam OpenID 2.0 Provider', () => {
   const CALLBACK_URL = 'http://localhost:3000/api/auth/callback/steam';
   const REALM = 'http://localhost:3000';
 
+  beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction();
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    global.prismaTestHelper.rollbackTransaction();
+  });
+
   describe('Initialization', () => {
     it('should create provider with hardcoded Steam endpoint', () => {
       const provider = new SteamOpenIDProvider(CALLBACK_URL, REALM);

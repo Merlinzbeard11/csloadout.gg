@@ -28,26 +28,24 @@ jest.mock('web-push', () => ({
 }))
 
 describe('Push Notification Service - Phase 1f', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemId: string
   let testAlertId: string
   let testSubscriptionId: string
 
   beforeEach(async () => {
-    // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
 
     // Create test user
     const testUser = await prisma.user.create({
       data: {
-        steam_id: 'test_push_notifications',
+        steam_id: `test_push_notifications_${uniqueId()}`,
         persona_name: 'PushTester',
         profile_url: 'https://steamcommunity.com/id/pushtester',
         avatar: 'https://example.com/avatar.png',
-        email: 'push@example.com',
+        email: `push-${uniqueId()}@example.com`,
         notification_push_enabled: true
       }
     })
@@ -56,9 +54,9 @@ describe('Push Notification Service - Phase 1f', () => {
     // Create test item
     const testItem = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
-        display_name: 'AK-47 | Redline (Field-Tested)',
-        search_name: 'ak47redlinefieldtested',
+        name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        display_name: `AK-47 | Redline (Field-Tested) ${uniqueId()}`,
+        search_name: `ak47redlinefieldtested${uniqueId()}`,
         type: 'skin',
         weapon_type: 'AK-47',
         rarity: 'classified',

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,94 +9,47 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InventoryItemCard } from "@/components/inventory-item-card"
 import { Download, Search, RefreshCw, AlertCircle, ExternalLink, Loader2 } from "lucide-react"
 import type { InventoryItem, InventoryStats } from "@/lib/types"
+import { startInventoryImport, retryInventoryImport } from "@/actions/inventory"
 
-// Mock data for demonstration
-const mockInventory: InventoryItem[] = [
-  {
-    assetId: "1",
-    item: {
-      id: "ak47-redline",
-      name: "AK-47 | Redline (Field-Tested)",
-      image: "/ak47-redline-cs2-skin.jpg",
-      rarity: "classified",
-    },
-    marketValue: 850.0,
-    valueChange: { amount: 25.5, percent: 3.1 },
-    tradable: true,
-    marketable: true,
-  },
-  {
-    assetId: "2",
-    item: {
-      id: "awp-asiimov",
-      name: "AWP | Asiimov (Field-Tested)",
-      image: "/awp-asiimov-cs2-skin.jpg",
-      rarity: "covert",
-    },
-    marketValue: 145.75,
-    valueChange: { amount: -5.25, percent: -3.5 },
-    tradable: true,
-    marketable: true,
-  },
-  {
-    assetId: "3",
-    item: {
-      id: "m4a4-howl",
-      name: "M4A4 | Howl (Factory New)",
-      image: "/m4a4-howl-cs2.png",
-      rarity: "contraband",
-    },
-    marketValue: 95.5,
-    valueChange: { amount: 2.0, percent: 2.1 },
-    tradable: false,
-    marketable: false,
-  },
-  {
-    assetId: "4",
-    item: {
-      id: "glock-fade",
-      name: "Glock-18 | Fade (Factory New)",
-      image: "/glock-fade-cs2-skin.jpg",
-      rarity: "restricted",
-    },
-    marketValue: 67.25,
-    valueChange: { amount: 1.5, percent: 2.3 },
-    tradable: true,
-    marketable: true,
-  },
-  {
-    assetId: "5",
-    item: {
-      id: "usp-orion",
-      name: "USP-S | Orion (Minimal Wear)",
-      image: "/usp-orion-cs2-skin.jpg",
-      rarity: "milspec",
-    },
-    marketValue: 34.9,
-    valueChange: { amount: -1.1, percent: -3.1 },
-    tradable: true,
-    marketable: true,
-  },
-  {
-    assetId: "6",
-    item: {
-      id: "p250-mehndi",
-      name: "P250 | Mehndi (Field-Tested)",
-      image: "/p250-mehndi-cs2-skin.jpg",
-      rarity: "industrial",
-    },
-    marketValue: 18.4,
-    valueChange: { amount: 0.4, percent: 2.2 },
-    tradable: true,
-    marketable: true,
-  },
-]
+type ImportState = "idle" | "importing" | "imported" | "error-private" | "error-unknown" | "loading"
 
-type ImportState = "idle" | "importing" | "imported" | "error-private" | "error-unknown"
+const ITEMS_PER_PAGE = 20
+
+// Map API item to UI format
+function mapItemToUI(item: any): InventoryItem {
+  // Image priority:
+  // 1. Item relation image_url (from database Item table)
+  // 2. InventoryItem icon_url (Steam CDN path from sync)
+  // 3. Placeholder
+  let imageUrl = '/placeholder-skin.png'
+  if (item.item?.image_url) {
+    imageUrl = item.item.image_url
+  } else if (item.icon_url) {
+    imageUrl = `https://community.akamai.steamstatic.com/economy/image/${item.icon_url}`
+  }
+
+  const rarity = item.item?.rarity || 'milspec'
+
+  return {
+    assetId: item.steam_asset_id,
+    item: {
+      id: item.item_id || item.steam_asset_id,
+      name: item.market_hash_name,
+      image: imageUrl,
+      rarity: rarity,
+    },
+    marketValue: parseFloat(item.current_value) || 0,
+    valueChange: { amount: 0, percent: 0 },
+    tradable: item.can_trade ?? true,
+    marketable: true,
+  }
+}
 
 export default function InventoryPage() {
-  const [importState, setImportState] = useState<ImportState>("idle")
+  const [importState, setImportState] = useState<ImportState>("loading")
   const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [totalItems, setTotalItems] = useState(0)
+  const [totalValue, setTotalValue] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("value-high")
   const [filterTradable, setFilterTradable] = useState(false)
@@ -104,46 +57,174 @@ export default function InventoryPage() {
   const [importProgress, setImportProgress] = useState(0)
   const [cooldownMinutes, setCooldownMinutes] = useState(0)
   const [lastSync, setLastSync] = useState<string | null>(null)
+  const [pricesLoading, setPricesLoading] = useState(false)
+  const [pricesUpdated, setPricesUpdated] = useState(0)
+
+  // Pagination state
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [offset, setOffset] = useState(0)
+
+  // Ref for intersection observer
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+
+  // Load more items function
+  const loadMoreItems = useCallback(async () => {
+    if (loadingMore || !hasMore) return
+
+    setLoadingMore(true)
+    try {
+      const response = await fetch(`/api/inventory?limit=${ITEMS_PER_PAGE}&offset=${offset}`)
+      if (response.ok) {
+        const data = await response.json()
+        const newItems = (data.items || []).map(mapItemToUI)
+
+        if (offset === 0) {
+          // First load - replace items
+          setInventory(newItems)
+          setTotalItems(data.pagination?.total || data.total_items || newItems.length)
+          setTotalValue(parseFloat(data.total_value) || 0)
+          setLastSync(data.last_synced ? new Date(data.last_synced).toLocaleString() : null)
+        } else {
+          // Subsequent loads - append items
+          setInventory(prev => [...prev, ...newItems])
+        }
+
+        setHasMore(data.pagination?.hasMore ?? false)
+        setOffset(prev => prev + newItems.length)
+        setImportState("imported")
+      } else if (response.status === 404) {
+        setImportState("idle")
+        setHasMore(false)
+      } else if (response.status === 401) {
+        setImportState("idle")
+        setHasMore(false)
+      }
+    } catch (error) {
+      console.error('Failed to load inventory:', error)
+      if (offset === 0) {
+        setImportState("idle")
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [offset, loadingMore, hasMore])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (importState !== "imported") return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMoreItems()
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    const currentRef = loadMoreRef.current
+    if (currentRef) {
+      observer.observe(currentRef)
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef)
+      }
+    }
+  }, [importState, hasMore, loadingMore, loadMoreItems])
+
+  // Initial fetch
+  useEffect(() => {
+    loadMoreItems()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run on mount
+
+  // Fetch prices for inventory items
+  async function fetchPrices() {
+    setPricesLoading(true)
+    try {
+      const response = await fetch('/api/inventory/prices', { method: 'POST' })
+      if (response.ok) {
+        const result = await response.json()
+        setPricesUpdated(result.updated)
+        // Reset and reload inventory with updated prices
+        setOffset(0)
+        setHasMore(true)
+        setInventory([])
+
+        // Fetch first page with updated prices
+        const inventoryResponse = await fetch(`/api/inventory?limit=${ITEMS_PER_PAGE}&offset=0`)
+        if (inventoryResponse.ok) {
+          const data = await inventoryResponse.json()
+          const items = (data.items || []).map(mapItemToUI)
+          setInventory(items)
+          setTotalValue(parseFloat(data.total_value) || 0)
+          setHasMore(data.pagination?.hasMore ?? false)
+          setOffset(items.length)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch prices:', error)
+    } finally {
+      setPricesLoading(false)
+    }
+  }
 
   const stats: InventoryStats = {
-    totalValue: inventory.reduce((sum, item) => sum + item.marketValue, 0),
-    itemCount: inventory.length,
+    totalValue: totalValue !== null ? totalValue : inventory.reduce((sum, item) => sum + item.marketValue, 0),
+    itemCount: totalItems || inventory.length,
     mostValuable:
       inventory.length > 0 ? inventory.reduce((max, item) => (item.marketValue > max.marketValue ? item : max)) : null,
+  }
+
+  // Loading state
+  if (importState === "loading") {
+    return (
+      <div className="min-h-screen bg-cs2-darker text-cs2-light p-4 md:p-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-6 h-6 animate-spin text-cs2-orange" />
+            <p className="text-lg">Loading inventory...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const handleImport = async () => {
     setImportState("importing")
     setImportProgress(0)
 
-    // Simulate import progress
     const interval = setInterval(() => {
       setImportProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          return 100
-        }
+        if (prev >= 90) return 90
         return prev + 10
       })
-    }, 300)
+    }, 500)
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const result = await startInventoryImport()
       clearInterval(interval)
-      // Randomly decide outcome for demo
-      const random = Math.random()
-      if (random < 0.7) {
-        setInventory(mockInventory)
+
+      if (result.success) {
+        setImportProgress(100)
         setImportState("imported")
-        setLastSync("2 minutes ago")
+        setLastSync("Just now")
         setCooldownMinutes(0)
-      } else if (random < 0.85) {
+        window.location.reload()
+      } else if (result.message?.toLowerCase().includes('private')) {
         setImportState("error-private")
       } else {
         setImportState("error-unknown")
       }
-      setImportProgress(0)
-    }, 3000)
+    } catch (error) {
+      clearInterval(interval)
+      console.error('Import error:', error)
+      setImportState("error-unknown")
+    }
+    setImportProgress(0)
   }
 
   const handleRefresh = () => {
@@ -153,11 +234,25 @@ export default function InventoryPage() {
     }
   }
 
-  const handleRetry = () => {
-    setImportState("idle")
+  const handleRetry = async () => {
+    setImportState("importing")
+    try {
+      const result = await retryInventoryImport()
+      if (result.success) {
+        setImportState("imported")
+        window.location.reload()
+      } else if (result.syncStatus === 'private') {
+        setImportState("error-private")
+      } else {
+        setImportState("error-unknown")
+      }
+    } catch (error) {
+      console.error('Retry error:', error)
+      setImportState("error-unknown")
+    }
   }
 
-  // Filter and sort inventory
+  // Filter and sort inventory (client-side for now)
   let filteredInventory = inventory.filter((item) => {
     const matchesSearch = item.item.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesTradable = !filterTradable || item.tradable
@@ -182,14 +277,33 @@ export default function InventoryPage() {
             {lastSync && <p className="text-sm text-gray-400 mt-1">Last synced {lastSync}</p>}
           </div>
           {importState === "imported" && (
-            <Button
-              onClick={handleRefresh}
-              disabled={cooldownMinutes > 0}
-              className="bg-cs2-blue hover:bg-cs2-blue/80 text-white"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              {cooldownMinutes > 0 ? `Refresh (${cooldownMinutes}m)` : "Refresh Inventory"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={fetchPrices}
+                disabled={pricesLoading}
+                className="bg-cs2-orange hover:bg-cs2-orange/80 text-white"
+              >
+                {pricesLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Fetching Prices...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Fetch Prices
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={handleRefresh}
+                disabled={cooldownMinutes > 0}
+                className="bg-cs2-blue hover:bg-cs2-blue/80 text-white"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                {cooldownMinutes > 0 ? `Refresh (${cooldownMinutes}m)` : "Refresh Inventory"}
+              </Button>
+            </div>
           )}
         </div>
 
@@ -361,11 +475,28 @@ export default function InventoryPage() {
         {importState === "imported" && (
           <>
             {filteredInventory.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {filteredInventory.map((item) => (
-                  <InventoryItemCard key={item.assetId} item={item} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {filteredInventory.map((item) => (
+                    <InventoryItemCard key={item.assetId} item={item} />
+                  ))}
+                </div>
+
+                {/* Load more trigger / Loading indicator */}
+                <div ref={loadMoreRef} className="py-8 flex justify-center">
+                  {loadingMore && (
+                    <div className="flex items-center gap-3">
+                      <Loader2 className="w-5 h-5 animate-spin text-cs2-orange" />
+                      <span className="text-gray-400">Loading more items...</span>
+                    </div>
+                  )}
+                  {!hasMore && inventory.length > 0 && (
+                    <p className="text-gray-500 text-sm">
+                      Showing all {inventory.length} items
+                    </p>
+                  )}
+                </div>
+              </>
             ) : (
               <Card className="bg-cs2-dark border-cs2-blue/20">
                 <CardContent className="pt-6 text-center text-gray-400">

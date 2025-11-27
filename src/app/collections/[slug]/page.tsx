@@ -20,27 +20,34 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { Breadcrumb } from '@/components/breadcrumb';
-import { ItemCard } from '@/components/item-card';
+import { GroupedItemCard } from '@/components/grouped-item-card';
 import { CollectionSkeleton } from '@/components/collection-skeleton';
 
 // Force dynamic rendering (fetches from API with dynamic route parameter)
 export const dynamic = 'force-dynamic';
 
-interface CollectionItem {
+interface Variant {
   id: string;
   name: string;
-  displayName: string;
-  searchName: string;
-  rarity: string | null;
-  type: string;
+  displayName: string | null;
+  variantType: 'normal' | 'stattrak' | 'souvenir';
+  wear: string | null;
   imageUrl: string;
   imageUrlFallback: string | null;
+}
+
+interface GroupedItem {
+  baseName: string;
+  slug: string;
+  rarity: string | null;
+  type: string;
   weaponType: string | null;
-  collection?: {
-    id: string;
-    name: string;
-    slug: string;
-  } | null;
+  imageUrl: string;
+  imageUrlFallback: string | null;
+  variantCount: number;
+  hasStatTrak: boolean;
+  hasSouvenir: boolean;
+  variants: Variant[];
 }
 
 interface CollectionDetailResponse {
@@ -52,9 +59,10 @@ interface CollectionDetailResponse {
   releaseDate: string;
   isDiscontinued: boolean;
   discontinuedDate: string | null;
-  items: CollectionItem[];
+  items: GroupedItem[];
   totalValue: number;
   itemCount: number;
+  totalVariants: number;
 }
 
 async function getCollection(slug: string): Promise<CollectionDetailResponse | null> {
@@ -186,23 +194,15 @@ async function CollectionContent({ slug }: { slug: string }) {
         <h1 className="text-3xl font-bold text-cs2-light mb-2">{collection.name}</h1>
         {collection.description && <p className="text-cs2-light/60 mb-2">{collection.description}</p>}
         <p className="text-cs2-light/60">
-          {collection.items.length} {collection.items.length === 1 ? 'item' : 'items'} in this collection
+          {collection.items.length} {collection.items.length === 1 ? 'skin' : 'skins'} ({collection.totalVariants} total variants)
         </p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {collection.items.map((item) => (
-          <ItemCard
-            key={item.id}
-            item={{
-              id: item.id,
-              name: item.name,
-              display_name: item.displayName,
-              rarity: item.rarity,
-              type: item.type,
-              image_url: item.imageUrl,
-              image_url_fallback: item.imageUrlFallback,
-            }}
+          <GroupedItemCard
+            key={item.baseName}
+            item={item}
           />
         ))}
       </div>

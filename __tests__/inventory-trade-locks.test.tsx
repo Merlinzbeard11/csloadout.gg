@@ -37,25 +37,19 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Trade-Locked Items (TDD - Iteration 24)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemId: string
 
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Trade Lock Test User',
         profile_url: 'https://steamcommunity.com/id/tradelocktest',
         avatar: 'https://example.com/avatar.jpg'
@@ -66,7 +60,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     // Create test item (M4A4 | Howl)
     const item = await prisma.item.create({
       data: {
-        name: 'test-m4a4-howl',
+        name: `test-m4a4-howl-${uniqueId()}`,
         display_name: 'M4A4 | Howl',
         search_name: 'm4a4 howl',
         type: 'weapon',
@@ -80,7 +74,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-tradelock-76561198000000000'
+        steamId: user.steam_id
       }
     })
   })
@@ -97,7 +91,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 2000.00,
         sync_status: 'success',
@@ -109,7 +103,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'M4A4 | Howl (Factory New)',
             current_value: 2000.00,
             wear: 'factory_new',
@@ -122,8 +116,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Lock icon and text are in separate elements
     expect(screen.getByText('🔒')).toBeInTheDocument()
@@ -137,7 +130,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 2000.00,
         sync_status: 'success',
@@ -149,7 +142,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'M4A4 | Howl (Factory New)',
             current_value: 2000.00,
             wear: 'factory_new',
@@ -162,8 +155,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Check for "Cannot sell until" and date in 2025 (date may vary by timezone)
     expect(screen.getByText(/Cannot sell until/i)).toBeInTheDocument()
@@ -177,7 +169,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 2000.00,
         sync_status: 'success',
@@ -189,7 +181,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'M4A4 | Howl (Factory New)',
             current_value: 2000.00,
             wear: 'factory_new',
@@ -202,8 +194,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should still show the value (may appear multiple times in summary stats)
     expect(screen.getAllByText(/\$2,000\.00/).length).toBeGreaterThanOrEqual(1)
@@ -216,7 +207,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     const inventory = await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 2000.00,
         sync_status: 'success',
@@ -228,7 +219,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'M4A4 | Howl (Factory New)',
             current_value: 2000.00,
             wear: 'factory_new',
@@ -257,7 +248,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 2000.00,
         sync_status: 'success',
@@ -269,7 +260,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'M4A4 | Howl (Factory New)',
             current_value: 2000.00,
             wear: 'factory_new',
@@ -282,8 +273,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should NOT show trade lock indicator
     expect(screen.queryByText(/🔒/)).not.toBeInTheDocument()
@@ -297,7 +287,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 2000.00,
         sync_status: 'success',
@@ -309,7 +299,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'M4A4 | Howl (Factory New)',
             current_value: 2000.00,
             wear: 'factory_new',
@@ -322,8 +312,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should have a dedicated trade lock section
     const tradeLockSection = container.querySelector('[data-testid="trade-lock-section"]')
@@ -337,7 +326,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-tradelock-76561198000000000',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 2000.00,
         sync_status: 'success',
@@ -349,7 +338,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'M4A4 | Howl (Factory New)',
             current_value: 2000.00,
             wear: 'factory_new',
@@ -362,8 +351,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show 3 days (not 7)
     expect(screen.getByText(/Tradeable in 3 days/i)).toBeInTheDocument()

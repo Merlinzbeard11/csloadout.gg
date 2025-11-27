@@ -25,6 +25,9 @@ describe('Phase 7e: View Analytics', () => {
   let privateLoadoutId: string
 
   beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+
     // Create test users
     const testUser = await prisma.user.create({
       data: {
@@ -77,7 +80,6 @@ describe('Phase 7e: View Analytics', () => {
   })
 
   afterEach(() => {
-    // Rollback transaction - automatic cleanup, no manual deletion needed
     global.prismaTestHelper.rollbackTransaction()
   })
 

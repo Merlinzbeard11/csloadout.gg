@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Search, X } from "lucide-react"
 
 interface SearchBoxProps {
@@ -10,36 +10,27 @@ interface SearchBoxProps {
 
 export function SearchBox({ defaultValue = "" }: SearchBoxProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [query, setQuery] = useState(defaultValue)
-
-  // Debounced search function
-  const updateSearch = useCallback(
-    (value: string) => {
-      const params = new URLSearchParams(searchParams.toString())
-
-      if (value) {
-        params.set("q", value)
-      } else {
-        params.delete("q")
-      }
-
-      // Reset to page 1 when searching
-      params.delete("page")
-
-      const queryString = params.toString()
-      router.push(`/items${queryString ? `?${queryString}` : ""}`)
-    },
-    [router, searchParams],
-  )
+  const initialQuery = useRef(defaultValue)
 
   useEffect(() => {
+    // Only navigate if query actually changed from initial value
+    if (query === initialQuery.current) {
+      return
+    }
+
     const timer = setTimeout(() => {
-      updateSearch(query)
+      // Build URL with just the search query, reset to page 1
+      const params = new URLSearchParams()
+      if (query) {
+        params.set("q", query)
+      }
+      const queryString = params.toString()
+      router.push(`/items${queryString ? `?${queryString}` : ""}`)
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [query, updateSearch])
+  }, [query, router])
 
   const handleClear = () => {
     setQuery("")

@@ -16,14 +16,28 @@ interface ItemCardProps {
   }
 }
 
+// CS2 rarity text colors - using standard CS2 rarity names
 const rarityColors: Record<string, string> = {
-  consumer: "text-gray-400",
-  industrial: "text-blue-400",
-  milspec: "text-blue-500",
-  restricted: "text-purple-500",
-  classified: "text-pink-500",
-  covert: "text-red-500",
-  contraband: "text-yellow-500",
+  consumer: "text-gray-400",      // Consumer Grade (Gray)
+  industrial: "text-blue-400",    // Industrial Grade (Light Blue)
+  milspec: "text-blue-500",       // Mil-Spec (Blue)
+  restricted: "text-purple-500",  // Restricted (Purple)
+  classified: "text-pink-500",    // Classified (Pink)
+  covert: "text-red-500",         // Covert (Red)
+  contraband: "text-yellow-500",  // Contraband (Gold)
+  default: "text-gray-400",
+}
+
+// CS2 rarity border colors - using standard CS2 rarity names
+const rarityBorderColors: Record<string, string> = {
+  consumer: "border-gray-500/50 hover:border-gray-400",      // Consumer Grade (Gray)
+  industrial: "border-blue-400/50 hover:border-blue-400",    // Industrial Grade (Light Blue)
+  milspec: "border-blue-500/50 hover:border-blue-500",       // Mil-Spec (Blue)
+  restricted: "border-purple-500/50 hover:border-purple-500", // Restricted (Purple)
+  classified: "border-pink-500/50 hover:border-pink-500",    // Classified (Pink)
+  covert: "border-red-500/50 hover:border-red-500",          // Covert (Red)
+  contraband: "border-yellow-500/50 hover:border-yellow-500", // Contraband (Gold)
+  default: "border-cs2-blue/20 hover:border-cs2-blue/50",
 }
 
 export function ItemCard({ item }: ItemCardProps) {
@@ -41,12 +55,14 @@ export function ItemCard({ item }: ItemCardProps) {
     }
   }
 
-  const rarityColor = item.rarity ? rarityColors[item.rarity.toLowerCase()] || "text-gray-400" : "text-gray-400"
+  const rarityKey = item.rarity || "default"
+  const rarityColor = rarityColors[rarityKey] || rarityColors.default
+  const borderColor = rarityBorderColors[rarityKey] || rarityBorderColors.default
 
   return (
     <Link
       href={`/items/${item.id}`}
-      className="group block bg-cs2-dark border border-cs2-blue/20 rounded-lg overflow-hidden transition-colors hover:border-cs2-blue/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cs2-blue focus-visible:ring-offset-2 focus-visible:ring-offset-cs2-darker"
+      className={`group block bg-cs2-dark border rounded-lg overflow-hidden transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cs2-blue focus-visible:ring-offset-2 focus-visible:ring-offset-cs2-darker ${borderColor}`}
     >
       {/* Image Section */}
       <div className="relative aspect-square bg-cs2-darker/50">

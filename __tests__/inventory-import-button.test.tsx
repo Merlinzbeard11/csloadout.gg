@@ -54,6 +54,10 @@ jest.mock('@/actions/consent', () => ({
 
 describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
   let testUserId: string
+  let testSteamId: string
+
+  // Generate unique steam_id per test to avoid conflicts
+  const generateUniqueSteamId = () => `test-import-btn-${Date.now()}-${Math.random().toString(36).substring(7)}`
 
   // Helper function to accept consent modal
   async function acceptConsentIfPresent() {
@@ -68,7 +72,11 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
   }
 
   beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+
     // Reset mocks
+    jest.clearAllMocks()
     mockRefresh.mockClear()
     mockStartImport.mockClear()
     mockRecordConsent.mockClear()
@@ -79,16 +87,13 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       message: 'Consent recorded successfully'
     })
 
-    // Clean up test data
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
+    // Generate unique steam_id for this test
+    testSteamId = generateUniqueSteamId()
 
-    // Create test user
+    // Create test user (transaction handles cleanup automatically)
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-76561198123456789',
+        steam_id: testSteamId,
         persona_name: 'Test User',
         profile_url: 'https://steamcommunity.com/id/test',
         avatar: 'https://example.com/avatar.jpg'
@@ -100,7 +105,7 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-76561198123456789'
+        steamId: testSteamId
       }
     })
   })
@@ -111,18 +116,16 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
   })
 
   it('should display "Import Steam Inventory" button in empty state', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     expect(importButton).toBeInTheDocument()
   })
 
   it('should show import button as clickable in empty state', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     expect(importButton).not.toBeDisabled()
   })
 
@@ -134,10 +137,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       message: 'Fetching inventory from Steam...'
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears
@@ -155,10 +157,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       message: 'Fetching inventory from Steam...'
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears
@@ -178,10 +179,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       message: 'Fetching inventory from Steam...'
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears
@@ -200,10 +200,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       itemsImported: 247
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears
@@ -222,10 +221,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       itemsImported: 247
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears
@@ -244,10 +242,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       itemsImported: 247
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears
@@ -265,10 +262,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       message: 'Failed to fetch inventory. Please try again.'
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears
@@ -287,10 +283,9 @@ describe('Import Button and Progress Indicator (TDD - RED Phase)', () => {
       itemsImported: 247
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
-    const importButton = screen.getByRole('button', { name: /import steam inventory/i })
+    const importButton = screen.getByRole('button', { name: /import from steam/i })
     fireEvent.click(importButton)
 
     // Accept consent if modal appears

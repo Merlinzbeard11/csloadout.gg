@@ -48,23 +48,19 @@ interface UserInventory {
 }
 
 describe('Inventory Dashboard Page (TDD - RED Phase)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testSteamId: string
 
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-id-inventory',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Test User',
         profile_url: 'https://steamcommunity.com/id/testuser',
         avatar: 'https://example.com/avatar.png',
@@ -98,8 +94,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       // No UserInventory record exists for test user
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Then I should see empty state message
       expect(screen.getByText(/import your steam inventory/i)).toBeInTheDocument()
@@ -109,8 +104,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       // BDD: When I click "Import Steam Inventory"
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Then I should see the import button
       const importButton = screen.getByRole('button', { name: /import steam inventory/i })
@@ -121,8 +115,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       // Empty state should explain what inventory feature does
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Then I should see explanation of inventory feature
       expect(screen.getByText(/see the total value/i)).toBeInTheDocument()
@@ -150,8 +143,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       // BDD: Then I should see my total inventory value "$2,458.67"
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/\$2,458\.67/)).toBeInTheDocument()
     })
@@ -160,8 +152,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       // BDD: And I should see "247 items imported"
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/247 items/i)).toBeInTheDocument()
     })
@@ -170,8 +161,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       // BDD: And I should see "Last synced: Just now"
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByText(/last synced/i)).toBeInTheDocument()
     })
@@ -185,8 +175,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       })
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
     })
@@ -201,7 +190,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
       // Component should redirect to sign-in (redirect() throws in tests)
       await expect(async () => {
-        await InventoryPage()
+        render(<InventoryPage />)
       }).rejects.toThrow()
     })
 
@@ -221,8 +210,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       })
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       // Should display user's inventory data
       expect(screen.getByText(/\$500\.00/)).toBeInTheDocument()
@@ -247,8 +235,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       })
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByRole('heading', { name: /inventory is private/i })).toBeInTheDocument()
     })
@@ -270,8 +257,7 @@ await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
       })
 
       const InventoryPage = (await import('@/app/inventory/page')).default
-      const page = await InventoryPage()
-      const { container } = render(page)
+      const { container } = render(<InventoryPage />)
 
       expect(screen.getByRole('heading', { name: /rate limit/i })).toBeInTheDocument()
     })

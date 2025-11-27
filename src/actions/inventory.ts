@@ -85,33 +85,31 @@ export async function startInventoryImport(): Promise<ImportResult> {
     })
 
     if (existingInventory) {
+      // Inventory exists - return success with existing data
       return {
-        success: false,
-        status: 'error',
-        message: 'Inventory already imported. Use refresh instead.'
+        success: true,
+        status: 'complete',
+        message: 'Inventory already imported',
+        itemsImported: existingInventory.total_items
       }
     }
 
-    // TODO: Call actual InventorySyncService.syncInventory(userId, steamId)
-    // For now, simulate import process
+    // Call the real InventorySyncService
+    const { SteamInventoryClient } = await import('@/lib/steam/steam-inventory-client')
+    const { InventorySyncService } = await import('@/lib/inventory/inventory-sync-service')
 
-    // Simulate successful import with mock data
-    const mockItemCount = 247
-    const mockTotalValue = 2458.67
+    const steamClient = new SteamInventoryClient()
+    const syncService = new InventorySyncService(steamClient, prisma)
 
-    // Create user inventory record
-    await prisma.userInventory.create({
-      data: {
-        user_id: userId,
-        steam_id: steamId,
-        total_items: mockItemCount,
-        total_value: mockTotalValue,
-        sync_status: 'success',
-        is_public: true,
-        consent_given: true,
-        last_synced: new Date()
+    const syncResult = await syncService.syncInventory(userId, { consentGiven: true })
+
+    if (!syncResult.success) {
+      return {
+        success: false,
+        status: 'error',
+        message: syncResult.message || 'Failed to import inventory'
       }
-    })
+    }
 
     // Revalidate the inventory page
     revalidatePath('/inventory')
@@ -120,7 +118,7 @@ export async function startInventoryImport(): Promise<ImportResult> {
       success: true,
       status: 'complete',
       message: 'Import Complete',
-      itemsImported: mockItemCount
+      itemsImported: syncResult.itemsImported || 0
     }
 
   } catch (error) {
@@ -167,34 +165,22 @@ export async function retryInventoryImport(): Promise<RetryImportResult> {
       }
     }
 
-    // Simple retry: Update sync_status to 'pending' and trigger re-sync
-    // In real implementation, this would call InventorySyncService
-    // For now, simulate a successful re-sync by updating status
+    // Call the real InventorySyncService with force=true to bypass cache
+    const { SteamInventoryClient } = await import('@/lib/steam/steam-inventory-client')
+    const { InventorySyncService } = await import('@/lib/inventory/inventory-sync-service')
 
-    // TODO: Call actual InventorySyncService.syncInventory(userId, steamId)
-    // const syncResult = await InventorySyncService.syncInventory(userId, steamId)
+    const steamClient = new SteamInventoryClient()
+    const syncService = new InventorySyncService(steamClient, prisma)
 
-    // Simulate: If inventory was private, it might still be private
-    // In real implementation, this would come from Steam API response
-    const stillPrivate = Math.random() > 0.7 // 30% chance still private
+    const syncResult = await syncService.syncInventory(userId, { consentGiven: true, force: true })
 
-    if (stillPrivate) {
+    if (!syncResult.success) {
       return {
         success: false,
-        message: 'Inventory is still private. Please check your Steam privacy settings.',
-        syncStatus: 'private'
+        message: syncResult.message || 'Failed to import inventory',
+        syncStatus: syncResult.error === 'PRIVATE_INVENTORY' ? 'private' : 'error'
       }
     }
-
-    // Update inventory status to success
-    await prisma.userInventory.update({
-      where: { user_id: userId },
-      data: {
-        sync_status: 'success',
-        is_public: true,
-        last_synced: new Date()
-      }
-    })
 
     // Revalidate the inventory page to show updated data
     revalidatePath('/inventory')

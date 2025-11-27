@@ -46,30 +46,13 @@ describe('Resume Failed Import (TDD - RED Phase)', () => {
   const testSteamId = '76561198123456789'
 
   beforeEach(async () => {
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
     mockRetryImport.mockClear()
-
-    // Cleanup test data
-    await prisma.inventoryItem.deleteMany({
-      where: { inventory: { user_id: testUserId } }
-    })
-    await prisma.userInventory.deleteMany({
-      where: { user_id: testUserId }
-    })
-    await prisma.user.deleteMany({
-      where: { id: testUserId }
-    })
   })
 
   afterEach(() => {
-    // Rollback transaction - automatic cleanup, no manual deletion needed
     global.prismaTestHelper.rollbackTransaction()
-  })
-    await prisma.userInventory.deleteMany({
-      where: { user_id: testUserId }
-    })
-    await prisma.user.deleteMany({
-      where: { id: testUserId }
-    })
   })
 
   it('should display "Retry Import" button when import_status is failed', async () => {
@@ -108,8 +91,7 @@ describe('Resume Failed Import (TDD - RED Phase)', () => {
 
     // Act - Render inventory page
     const InventoryPage = (await import('@/app/inventory/page')).default
-    const page = await InventoryPage()
-    const { container } = render(page)
+    const { container } = render(<InventoryPage />)
 
     // Assert
     expect(screen.getByRole('button', { name: /retry import/i })).toBeInTheDocument()
@@ -321,8 +303,7 @@ describe('Resume Failed Import (TDD - RED Phase)', () => {
 
     // Act
     const InventoryPage = (await import('@/app/inventory/page')).default
-    const page = await InventoryPage()
-    const { container } = render(page)
+    const { container } = render(<InventoryPage />)
 
     // Assert
     expect(screen.queryByRole('button', { name: /retry import/i })).not.toBeInTheDocument()

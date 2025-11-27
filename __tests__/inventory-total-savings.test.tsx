@@ -43,24 +43,22 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Total Savings Calculation (TDD - RED Phase)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemIds: string[] = []
 
   beforeEach(async () => {
+    // Start transaction for test isolation
+    await global.prismaTestHelper.startTransaction()
+    jest.clearAllMocks()
+
     // Reset test data
     testItemIds = []
-
-    // Clean up test data in correct order (child -> parent)
-    await prisma.inventoryItem.deleteMany({})
-    await prisma.marketplacePrice.deleteMany({})
-    await prisma.userInventory.deleteMany({})
-    await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-76561198123456789',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Test User',
         profile_url: 'https://steamcommunity.com/id/test',
         avatar: 'https://example.com/avatar.jpg'
@@ -72,7 +70,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-76561198123456789'
+        steamId: user.steam_id
       }
     })
 
@@ -80,7 +78,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
     // Item 1: AK-47 | Redline - Best: $10.00, Steam: $8.00, Savings: $2.00
     const item1 = await prisma.item.create({
       data: {
-        name: 'test-ak47-redline',
+        name: `test-ak47-redline-${uniqueId()}`,
         display_name: 'AK-47 | Redline (Field-Tested)',
         search_name: 'ak47 redline field tested',
         type: 'skin',
@@ -94,7 +92,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
     // Item 2: AWP | Asiimov - Best: $50.00, Steam: $45.00, Savings: $5.00
     const item2 = await prisma.item.create({
       data: {
-        name: 'test-awp-asiimov',
+        name: `test-awp-asiimov-${uniqueId()}`,
         display_name: 'AWP | Asiimov (Field-Tested)',
         search_name: 'awp asiimov field tested',
         type: 'skin',
@@ -108,7 +106,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
     // Item 3: M4A4 | Howl - Best: $2000.00, Steam: $1900.00, Savings: $100.00
     const item3 = await prisma.item.create({
       data: {
-        name: 'test-m4a4-howl',
+        name: `test-m4a4-howl-${uniqueId()}`,
         display_name: 'M4A4 | Howl (Factory New)',
         search_name: 'm4a4 howl factory new',
         type: 'skin',
@@ -144,7 +142,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
     const userInventory = await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-76561198123456789',
+        steam_id: user.steam_id,
         total_items: 3,
         total_value: 2060.00, // Sum of best platform prices
         sync_status: 'success',
@@ -160,19 +158,19 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
         {
           inventory_id: userInventory.id,
           item_id: testItemIds[0],
-          steam_asset_id: 'asset-1',
+          steam_asset_id: `asset-${uniqueId()}`,
           market_hash_name: 'AK-47 | Redline (Field-Tested)'
         },
         {
           inventory_id: userInventory.id,
           item_id: testItemIds[1],
-          steam_asset_id: 'asset-2',
+          steam_asset_id: `asset-${uniqueId()}`,
           market_hash_name: 'AWP | Asiimov (Field-Tested)'
         },
         {
           inventory_id: userInventory.id,
           item_id: testItemIds[2],
-          steam_asset_id: 'asset-3',
+          steam_asset_id: `asset-${uniqueId()}`,
           market_hash_name: 'M4A4 | Howl (Factory New)'
         }
       ]
@@ -185,24 +183,21 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
   })
 
   it('should display total items stat card', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText('Total Items')).toBeInTheDocument()
     expect(screen.getByText('3 items')).toBeInTheDocument()
   })
 
   it('should display total value stat card with best platform prices', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     expect(screen.getByText('Total Value')).toBeInTheDocument()
     expect(screen.getByText('$2,060.00')).toBeInTheDocument()
   })
 
   it('should calculate and display potential savings', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show "Potential Savings" label
     expect(screen.getByText('Potential Savings')).toBeInTheDocument()
@@ -212,8 +207,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
   })
 
   it('should display savings percentage vs Steam Market', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show "vs Steam Market" label
     expect(screen.getByText('vs Steam Market')).toBeInTheDocument()
@@ -225,8 +219,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
   })
 
   it('should display savings with green indicator for positive savings', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     const savingsElement = screen.getByText('$107.00')
 
@@ -236,8 +229,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
   })
 
   it('should display all four stat cards in summary section', async () => {
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // All four metrics should be visible
     expect(screen.getByText('Total Items')).toBeInTheDocument()
@@ -261,8 +253,7 @@ describe('Total Savings Calculation (TDD - RED Phase)', () => {
       data: { total_value: 1953.00 } // Same as Steam total
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should show $0.00 savings
     expect(screen.getByText('Potential Savings')).toBeInTheDocument()

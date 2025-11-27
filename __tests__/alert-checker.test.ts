@@ -34,11 +34,11 @@ describe('Alert Checker Service - Phase 1d: Alert Triggering Logic', () => {
     // Create test user with email for notifications
     const testUser = await prisma.user.create({
       data: {
-        steam_id: 'test_steam_alert_checker',
+        steam_id: `test_steam_alert_checker_${Date.now()}`,
         persona_name: 'AlertCheckerTester',
         profile_url: 'https://steamcommunity.com/id/alertcheckertester',
         avatar: 'https://example.com/avatar.png',
-        email: 'alertchecker@test.com',
+        email: `alertchecker_${Date.now()}@test.com`,
         notification_email_enabled: true,
         notification_push_enabled: true
       }
@@ -46,9 +46,10 @@ describe('Alert Checker Service - Phase 1d: Alert Triggering Logic', () => {
     testUserId = testUser.id
 
     // Create test item
+    const timestamp = Date.now()
     const testItem = await prisma.item.create({
       data: {
-        name: 'AK-47 | Redline (Field-Tested)',
+        name: `AK-47 | Redline (Field-Tested) ${timestamp}`,
         display_name: 'AK-47 | Redline (Field-Tested)',
         search_name: 'ak47redlinefieldtested',
         type: 'skin',

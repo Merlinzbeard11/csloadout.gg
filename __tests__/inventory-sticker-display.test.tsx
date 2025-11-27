@@ -38,25 +38,19 @@ jest.mock('@/lib/auth/session', () => ({
 }))
 
 describe('Sticker Display (TDD - Iteration 22)', () => {
+  const uniqueId = () => `${Date.now()}-${Math.random().toString(36).substring(7)}`
   let testUserId: string
   let testItemId: string
 
   beforeEach(async () => {
     // Start transaction for test isolation
     await global.prismaTestHelper.startTransaction()
-
-    // Clear mock state
     jest.clearAllMocks()
-
-    // (Manual cleanup removed - handled by transaction rollback)
-await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
-    await prisma.userInventory.deleteMany({})
-    await prisma.user.deleteMany({ where: { steam_id: { startsWith: 'test-' } } })
 
     // Create test user
     const user = await prisma.user.create({
       data: {
-        steam_id: 'test-steam-stickers-76561198888888888',
+        steam_id: `test-steam-${uniqueId()}`,
         persona_name: 'Sticker Test User',
         profile_url: 'https://steamcommunity.com/id/stickertest',
         avatar: 'https://example.com/avatar.jpg'
@@ -67,7 +61,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     // Create test item (AK-47 | Redline)
     const item = await prisma.item.create({
       data: {
-        name: 'test-ak47-redline',
+        name: `test-ak47-redline-${uniqueId()}`,
         display_name: 'AK-47 | Redline',
         search_name: 'ak47 redline',
         type: 'weapon',
@@ -81,7 +75,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     mockGetSession.mockResolvedValue({
       user: {
         id: testUserId,
-        steamId: 'test-steam-stickers-76561198888888888'
+        steamId: user.steam_id
       }
     })
   })
@@ -97,7 +91,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-stickers-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -109,7 +103,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -126,8 +120,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should display all 4 sticker names
     expect(screen.getByText(/Natus Vincere.*Holo/i)).toBeInTheDocument()
@@ -142,7 +135,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-stickers-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -154,7 +147,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -169,8 +162,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should show position indicators
     const stickersSection = container.querySelector('[data-testid="stickers-section"]')
@@ -183,7 +175,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-stickers-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 25.00,
         sync_status: 'success',
@@ -195,7 +187,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 25.00,
             wear: 'field_tested',
@@ -207,8 +199,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should NOT show stickers section
     expect(screen.queryByText(/sticker/i)).not.toBeInTheDocument()
@@ -220,7 +211,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-stickers-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 30.00,
         sync_status: 'success',
@@ -232,7 +223,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 30.00,
             wear: 'field_tested',
@@ -247,8 +238,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    render(InventoryPageResult)
+    render(<InventoryPage />)
 
     // Should display only the 2 stickers applied
     expect(screen.getByText(/Natus Vincere.*Holo/i)).toBeInTheDocument()
@@ -261,7 +251,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
     await prisma.userInventory.create({
       data: {
         user_id: testUserId,
-        steam_id: 'test-steam-stickers-76561198888888888',
+        steam_id: user.steam_id,
         total_items: 1,
         total_value: 50.00,
         sync_status: 'success',
@@ -273,7 +263,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
             item: {
               connect: { id: testItemId }
             },
-            steam_asset_id: '12345678901',
+            steam_asset_id: `asset-${uniqueId()}`,
             market_hash_name: 'AK-47 | Redline (Field-Tested)',
             current_value: 50.00,
             wear: 'field_tested',
@@ -287,8 +277,7 @@ await prisma.item.deleteMany({ where: { name: { startsWith: 'test-' } } })
       }
     })
 
-    const InventoryPageResult = await InventoryPage()
-    const { container } = render(InventoryPageResult)
+    const { container } = render(<InventoryPage />)
 
     // Should have distinct stickers section with header or border
     const stickersSection = container.querySelector('[data-testid="stickers-section"]')
